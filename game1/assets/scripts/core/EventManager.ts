@@ -89,7 +89,15 @@ class EventManagerCls {
 
   emit(event: string, ...args: any[]): void {
     const listeners = this._listeners.get(event);
-    if (!listeners) return;
+    if (!listeners) {
+      if (event.startsWith('DIALOGUE') || event.startsWith('CHOICE')) {
+        console.warn('[EventManager] No listeners for:', event);
+      }
+      return;
+    }
+    if (event.startsWith('DIALOGUE') || event.startsWith('CHOICE')) {
+      console.log('[EventManager] Emitting', event, 'to', listeners.length, 'listeners');
+    }
 
     for (let i = listeners.length - 1; i >= 0; i--) {
       const l = listeners[i];
