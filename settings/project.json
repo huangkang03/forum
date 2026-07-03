@@ -1,0 +1,9 @@
+{
+  "platform": "wechatgame",
+  "designResolution": {
+    "width": 750,
+    "height": 1334
+  },
+  "fitWidth": true,
+  "fitHeight": true
+}

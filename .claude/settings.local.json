@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(//c/Users/HK253/.claude/plugins//**)",
+      "Read(//c/Users/HK253/.claude/plugins/marketplaces//**)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(mkdir -p /c/Users/HK253/.ssh)",
+      "Bash(ssh-keyscan -t ed25519 github.com)",
+      "Bash(git *)",
+      "Read(//c/Users/HK253/.claude//**)",
+      "Read(//c/Users/HK253/.claude/**)"
+    ]
+  }
+}
