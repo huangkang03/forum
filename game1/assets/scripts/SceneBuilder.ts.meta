@@ -1,11 +1,12 @@
 {
-  "ver": "1.1.0",
+  "ver": "4.0.24",
   "importer": "typescript",
   "imported": true,
-  "uuid": "c9b0417c-bbf4-4566-ae48-53f17e68a65",
+  "uuid": "6a5e7bad-c116-496f-a70a-d9ebbb1ad376",
   "files": [],
   "subMetas": {},
   "userData": {
-    "importedAs": "db://assets/scripts/SceneBuilder.ts"
+    "importedAs": "db://assets/scripts/SceneBuilder.ts",
+    "simulateGlobals": []
   }
 }

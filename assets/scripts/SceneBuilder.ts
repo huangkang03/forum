@@ -27,23 +27,24 @@ export class SceneBuilder extends Component {
   private buildScene(): void {
     const canvas = this.node;
 
-    // ===== 核心管理器节点 =====
-    const gameMgr = this.createNode('GameManager', canvas);
+    // ===== 核心管理器节点（直接挂场景根节点）=====
+    const sceneRoot = canvas.parent!;
+    const gameMgr = this.createNode('GameManager', sceneRoot);
     gameMgr.addComponent(GameManager);
 
-    const storyMgr = this.createNode('StoryManager', canvas);
+    const storyMgr = this.createNode('StoryManager', sceneRoot);
     storyMgr.addComponent(StoryManager);
 
-    const calendarMgr = this.createNode('CalendarManager', canvas);
+    const calendarMgr = this.createNode('CalendarManager', sceneRoot);
     calendarMgr.addComponent(CalendarManager);
 
-    const charMgr = this.createNode('CharacterManager', canvas);
+    const charMgr = this.createNode('CharacterManager', sceneRoot);
     charMgr.addComponent(CharacterManager);
 
-    const audioMgr = this.createNode('AudioManager', canvas);
+    const audioMgr = this.createNode('AudioManager', sceneRoot);
     audioMgr.addComponent(AudioManager);
 
-    const sceneBoot = this.createNode('SceneBoot', canvas);
+    const sceneBoot = this.createNode('SceneBoot', sceneRoot);
     const boot = sceneBoot.addComponent(SceneBoot);
     boot.gameManagerNode = gameMgr;
 
@@ -413,7 +414,7 @@ export class SceneBuilder extends Component {
   }
 
   private setSize(node: Node, w: number, h: number): void {
-    const ui = node.getComponent(UITransform)!;
+    const ui = node.getComponent(UITransform) || node.addComponent(UITransform);
     ui.setContentSize(w, h);
   }
 }
