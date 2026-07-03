@@ -21,14 +21,17 @@ export class CalendarPanel extends Component {
   private _selectedSlot: ActivitySlot = ActivitySlot.MORNING;
 
   onLoad(): void {
+    console.log('[CalendarPanel] onLoad, registering MODE_CHANGED listener');
     EventManager.on(GameEvents.MODE_CHANGED, this.onModeChanged, this);
     this.node.active = false;
   }
 
   private onModeChanged(mode: GameMode): void {
+    console.log('[CalendarPanel] onModeChanged:', mode, 'enum value:', GameMode.CALENDAR);
     if (mode !== GameMode.CALENDAR) { this.node.active = false; return; }
     this.node.active = true;
     this.buildCalendar();
+    console.log('[CalendarPanel] Calendar panel activated');
   }
 
   private buildCalendar(): void {
