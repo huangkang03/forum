@@ -66,8 +66,10 @@ export class StoryManager extends Component {
 
   /** 播放指定对话 */
   playDialogue(chapterId: string, index: number): void {
+    console.log('[StoryManager] playDialogue:', chapterId, 'index:', index);
     const ch = this._currentStory?.chapters.find(c => c.id === chapterId);
     if (!ch || index >= ch.dialogues.length) {
+      console.log('[StoryManager] Chapter or index invalid, ending');
       this.onChapterEnd();
       return;
     }
@@ -96,6 +98,7 @@ export class StoryManager extends Component {
     }
 
     // 通知 UI 显示对话
+    console.log('[StoryManager] Emitting DIALOGUE_NEXT:', dialogue.speaker, dialogue.text?.substring(0, 20));
     EventManager.emit(GameEvents.DIALOGUE_NEXT, dialogue);
 
     // 如果没有选项，等待玩家点击继续
