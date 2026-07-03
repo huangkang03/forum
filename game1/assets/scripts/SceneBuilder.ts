@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Canvas, UITransform, Label, Sprite, SpriteFrame, Button, Layout, Color, Widget, Size, Vec3, Prefab, director, Camera, view, Layers } from 'cc';
+import { _decorator, Component, Node, Canvas, UITransform, Label, Sprite, SpriteFrame, Button, Layout, Color, Widget, Size, Vec3, Prefab, director, Camera, view, Layers, Graphics } from 'cc';
 import { GameManager } from './core/GameManager';
 import { StoryManager } from './story/StoryManager';
 import { CalendarManager } from './calendar/CalendarManager';
@@ -130,8 +130,7 @@ export class SceneBuilder extends Component {
     // 创建选项按钮模板
     const btnPrefab = this.createNode('ChoiceButtonTemplate', container);
     this.setSize(btnPrefab, 500, 52);
-    const btnSprite = btnPrefab.addComponent(Sprite);
-    btnSprite.color = new Color(60, 60, 80, 220);
+    this.addSprite(btnPrefab, new Color(60, 60, 80, 220));
     btnPrefab.addComponent(Button);
     const btnLabelNode = this.createNode('Label', btnPrefab);
     const btnLabel = btnLabelNode.addComponent(Label);
@@ -161,8 +160,7 @@ export class SceneBuilder extends Component {
     const slot = this.createNode(name, parent);
     slot.setPosition(x, y, 0);
     this.setSize(slot, 300, 500);
-    const sprite = slot.addComponent(Sprite);
-    sprite.color = Color.WHITE;
+    slot.addComponent(Sprite); // 预留 Sprite，等资源加载后使用
     slot.active = false;
     return slot;
   }
@@ -204,8 +202,7 @@ export class SceneBuilder extends Component {
 
     // 执行按钮
     const execBtn = this.createNode('ExecuteBtn', panel);
-    const execSprite = execBtn.addComponent(Sprite);
-    execSprite.color = new Color(80, 160, 80, 255);
+    this.addSprite(execBtn, new Color(80, 160, 80, 255));
     execBtn.addComponent(Button);
     this.setSize(execBtn, 200, 50);
     execBtn.setPosition(0, -550, 0);
@@ -306,8 +303,7 @@ export class SceneBuilder extends Component {
     summaryText.setAnchorPoint(0.5, 1);
 
     const closeBtn = this.createNode('CloseBtn', innerPanel);
-    const closeSprite = closeBtn.addComponent(Sprite);
-    closeSprite.color = new Color(80, 160, 80, 255);
+    this.addSprite(closeBtn, new Color(80, 160, 80, 255));
     closeBtn.addComponent(Button);
     this.setSize(closeBtn, 150, 44);
     closeBtn.setPosition(0, -210, 0);
@@ -352,27 +348,24 @@ export class SceneBuilder extends Component {
     let selectedGender: 'male' | 'female' = 'male';
 
     const maleBtn = this.createButton('MaleBtn', panel, '男生', 0, 100, 200, 80);
-    const maleSprite = maleBtn.getComponent(Sprite)!;
-    maleSprite.color = new Color(80, 120, 200, 255);
+    this.redrawBtn(maleBtn, new Color(80, 120, 200, 255));
     maleBtn.on(Button.EventType.CLICK, () => {
       selectedGender = 'male';
-      maleSprite.color = new Color(80, 160, 255, 255);
-      panel.getChildByName('FemaleBtn')!.getComponent(Sprite)!.color = new Color(80, 80, 100, 255);
+      this.redrawBtn(maleBtn, new Color(80, 160, 255, 255));
+      this.redrawBtn(panel.getChildByName('FemaleBtn')!, new Color(80, 80, 100, 255));
     });
 
     const femaleBtn = this.createButton('FemaleBtn', panel, '女生', 0, -20, 200, 80);
-    const femaleSprite = femaleBtn.getComponent(Sprite)!;
-    femaleSprite.color = new Color(80, 80, 100, 255);
+    this.redrawBtn(femaleBtn, new Color(80, 80, 100, 255));
     femaleBtn.on(Button.EventType.CLICK, () => {
       selectedGender = 'female';
-      femaleSprite.color = new Color(255, 140, 180, 255);
-      maleSprite.color = new Color(80, 80, 100, 255);
+      this.redrawBtn(femaleBtn, new Color(255, 140, 180, 255));
+      this.redrawBtn(maleBtn, new Color(80, 80, 100, 255));
     });
 
     // 确认按钮
     const confirmBtn = this.createButton('ConfirmBtn', panel, '开始游戏', 0, -160, 300, 64);
-    const confirmSprite = confirmBtn.getComponent(Sprite)!;
-    confirmSprite.color = new Color(80, 180, 80, 255);
+    this.redrawBtn(confirmBtn, new Color(80, 180, 80, 255));
     confirmBtn.on(Button.EventType.CLICK, () => {
       const name = selectedGender === 'male' ? '小明' : '小丽';
       boot.onCharacterConfirmed(name, selectedGender);
@@ -394,7 +387,7 @@ export class SceneBuilder extends Component {
 
   private createButton(name: string, parent: Node, text: string, x: number, y: number, w: number, h: number): Node {
     const btn = this.createNode(name, parent);
-    btn.addComponent(Sprite);
+    this.addSprite(btn, new Color(80, 80, 100, 255));
     btn.addComponent(Button);
     this.setSize(btn, w, h);
     btn.setPosition(x, y, 0);
@@ -411,9 +404,19 @@ export class SceneBuilder extends Component {
     return btn;
   }
 
-  private addSprite(node: Node, color: Color): void {
-    const sprite = node.getComponent(Sprite) || node.addComponent(Sprite);
-    sprite.color = color;
+  private addSprite(node: Node, color: Color): Graphics {
+    const g = node.getComponent(Graphics) || node.addComponent(Graphics);
+    const ui = node.getComponent(UITransform)!;
+    g.clear();
+    g.fillColor = color;
+    g.rect(-ui.width / 2, -ui.height / 2, ui.width, ui.height);
+    g.fill();
+    return g;
+  }
+
+  private redrawBtn(btn: Node, color: Color): void {
+    if (!btn) return;
+    this.addSprite(btn, color);
   }
 
   private setSize(node: Node, w: number, h: number): void {
