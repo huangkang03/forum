@@ -215,13 +215,15 @@ export class StoryManager extends Component {
   }
 
   private onDialogueStart(storyId: string, startIndex: number = 0): void {
+    console.log('[StoryManager] DIALOGUE_START received:', storyId);
     this.loadStory(storyId).then(() => {
+      console.log('[StoryManager] Story loaded:', this._currentStory?.title, 'chapters:', this._currentStory?.chapters.length);
       if (this._currentStory && this._currentStory.chapters.length > 0) {
-        const gm = GameManager.instance;
-        const chapterId = gm.currentStoryId;
         const ch = this._currentStory.chapters[0];
         this.enterChapter(ch.id);
       }
+    }).catch(err => {
+      console.error('[StoryManager] Failed to load story:', err);
     });
   }
 

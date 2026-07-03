@@ -46,6 +46,7 @@ export class DialoguePanel extends Component {
 
   /** 显示一条对话 */
   private onShowDialogue(dialogue: Dialogue): void {
+    console.log('[DialoguePanel] Showing dialogue:', dialogue.speakerName, dialogue.text?.substring(0, 30));
     this.show();
 
     // 说话者

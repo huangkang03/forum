@@ -42,6 +42,7 @@ export class SceneBoot extends Component {
     if (this.characterCreateNode) this.characterCreateNode.active = false;
     gm.enterStoryMode();
     EventManager.emit(GameEvents.CHARACTER_CREATED, { name, gender });
-    EventManager.emit(GameEvents.DIALOGUE_START, 'chapter_1');
+    console.log('[SceneBoot] Starting story: primary_1_semester_1');
+    EventManager.emit(GameEvents.DIALOGUE_START, 'primary_1_semester_1');
   }
 }
