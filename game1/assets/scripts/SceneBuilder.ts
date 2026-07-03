@@ -181,7 +181,8 @@ export class SceneBuilder extends Component {
     container.setPosition(0, -200, 0);
 
     // 创建选项按钮模板
-    const btnPrefab = this.createNode('ChoiceButtonTemplate', container);
+    // 创建选项按钮模板（不挂在容器下，设为不可见）
+    const btnPrefab = this.createNode('ChoiceButtonTemplate', panel);
     this.setSize(btnPrefab, 500, 52);
     this.addSprite(btnPrefab, new Color(60, 60, 80, 220));
     btnPrefab.addComponent(Button);
@@ -189,9 +190,10 @@ export class SceneBuilder extends Component {
     const btnLabel = btnLabelNode.addComponent(Label);
     btnLabel.fontSize = 22;
     btnLabel.color = new Color(255, 255, 255, 255);
+    btnPrefab.active = false; // 模板不显示
 
     choice.buttonContainer = container;
-    (choice as any).choiceButtonPrefab = btnPrefab; // Prefab ref
+    (choice as any).choiceButtonPrefab = btnPrefab;
   }
 
   // ==================== Character Display ====================

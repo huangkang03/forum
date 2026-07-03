@@ -45,7 +45,7 @@ export class ChoicePanel extends Component {
       // 绑定点击事件
       const btnComp = btn.getComponent(Button);
       if (btnComp) {
-        btn.node.on(Button.EventType.CLICK, () => {
+        btn.on(Button.EventType.CLICK, () => {
           this.onChoiceClick(choice);
         });
       }
