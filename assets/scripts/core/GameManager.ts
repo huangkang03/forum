@@ -1,120 +1,94 @@
-import { _decorator, Component, Node, director, game, Game } from 'cc';
+import { _decorator, Component, Node, director, game } from 'cc';
 import { EventManager, GameEvents } from './EventManager';
-import { SaveManager } from '../data/SaveManager';
-import { AudioManager } from '../audio/AudioManager';
+import { SchoolPhase, StatType, PHASE_CONFIG, MAX_ENERGY } from '../data/GameConfig';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 游戏总控 — 全局单例，管理游戏生命周期和核心状态
- * 挂载在初始场景的根节点上
- */
+export enum GameMode { INIT, CHARACTER_CREATE, STORY, CALENDAR, EXAM, ENDING }
+
+export interface PlayerData {
+  playerName: string;
+  playerGender: 'male' | 'female';
+  currentPhase: SchoolPhase;
+  currentWeek: number;
+  energy: number;
+  stats: Record<StatType, number>;
+  flags: Set<string>;
+  affection: Map<string, number>;
+}
+
 @ccclass('GameManager')
 export class GameManager extends Component {
-  @property(Node)
-  dialogueLayer: Node = null!;   // 对话 UI 层
+  @property(Node) uiLayer: Node = null!;
 
-  @property(Node)
-  characterLayer: Node = null!;  // 角色展示层
-
-  @property(Node)
-  backgroundLayer: Node = null!; // 背景层
-
-  // ---- 游戏全局状态 ----
-  gameState: GameState = GameState.INIT;
-  currentStoryId: string = '';
-  currentDialogueIndex: number = 0;
-  /** 已触发的剧情标记，用于条件分支 */
-  flags: Set<string> = new Set();
-  /** 角色好感度 */
-  affection: Map<string, number> = new Map();
-  /** 当前是否自动播放 */
-  autoMode: boolean = false;
-  /** 是否显示未读文本（Log 模式） */
-  logMode: boolean = false;
+  gameMode: GameMode = GameMode.INIT;
+  player: PlayerData = this.createDefaultPlayer();
 
   private static _instance: GameManager | null = null;
+  static get instance(): GameManager { return GameManager._instance!; }
 
-  static get instance(): GameManager {
-    return GameManager._instance!;
+  private createDefaultPlayer(): PlayerData {
+    return {
+      playerName: '', playerGender: 'male',
+      currentPhase: SchoolPhase.PRIMARY_1, currentWeek: 0,
+      energy: MAX_ENERGY,
+      stats: { [StatType.ACADEMIC]: 50, [StatType.SPORTS]: 50, [StatType.ART]: 50, [StatType.SOCIAL]: 50, [StatType.INTEREST]: 50 },
+      flags: new Set(), affection: new Map(),
+    };
   }
 
   onLoad(): void {
-    if (GameManager._instance) {
-      this.destroy();
-      return;
-    }
+    if (GameManager._instance) { this.destroy(); return; }
     GameManager._instance = this;
-    game.addPersistRootNode(this.node); // 常驻节点，场景切换不销毁
+    game.addPersistRootNode(this.node);
   }
 
   start(): void {
-    this.gameState = GameState.READY;
+    this.gameMode = GameMode.CHARACTER_CREATE;
     EventManager.emit(GameEvents.SCENE_LOADED, 'init');
   }
 
-  /** 开始新游戏 */
-  startNewGame(storyId: string): void {
-    this.flags.clear();
-    this.affection.clear();
-    this.currentStoryId = storyId;
-    this.currentDialogueIndex = 0;
-    this.gameState = GameState.PLAYING;
-    EventManager.emit(GameEvents.DIALOGUE_START, storyId);
+  setCharacter(name: string, gender: 'male' | 'female'): void {
+    this.player.playerName = name;
+    this.player.playerGender = gender;
+    this.player.flags.add(gender === 'male' ? 'protagonist_male' : 'protagonist_female');
+    this.player.flags.add('childhood_friend_' + (gender === 'male' ? 'xiaowei' : 'xiaokang'));
   }
 
-  /** 继续游戏（读档） */
-  async continueGame(): Promise<void> {
-    const data = await SaveManager.load();
-    if (!data) {
-      this.startNewGame('chapter_1');
-      return;
+  enterStoryMode(): void { this.gameMode = GameMode.STORY; }
+  enterCalendarMode(): void { this.gameMode = GameMode.CALENDAR; }
+  enterExamMode(): void { this.gameMode = GameMode.EXAM; }
+
+  modifyStat(stat: StatType, delta: number): void {
+    const v = this.player.stats[stat] + delta;
+    this.player.stats[stat] = Math.max(0, Math.min(100, v));
+  }
+
+  modifyEnergy(delta: number): void {
+    this.player.energy = Math.max(0, Math.min(MAX_ENERGY, this.player.energy + delta));
+  }
+
+  modifyAffection(charId: string, delta: number): void {
+    const v = (this.player.affection.get(charId) || 0) + delta;
+    this.player.affection.set(charId, Math.max(0, Math.min(100, v)));
+  }
+
+  setFlag(flag: string): void { this.player.flags.add(flag); }
+  hasFlag(flag: string): boolean { return this.player.flags.has(flag); }
+  getAffection(charId: string): number { return this.player.affection.get(charId) || 0; }
+
+  advancePhase(): void {
+    const next = PHASE_CONFIG[this.player.currentPhase].nextPhase;
+    if (next) {
+      this.player.currentPhase = next;
+      this.player.currentWeek = 0;
+      EventManager.emit(GameEvents.SCENE_CHANGE, next);
     }
-    this.currentStoryId = data.storyId;
-    this.currentDialogueIndex = data.dialogueIndex;
-    this.flags = new Set(data.flags);
-    this.affection = new Map(data.affection);
-    this.gameState = GameState.PLAYING;
-    EventManager.emit(GameEvents.GAME_LOADED, data);
-    EventManager.emit(GameEvents.DIALOGUE_START, this.currentStoryId, this.currentDialogueIndex);
   }
 
-  /** 设置剧情标记 */
-  setFlag(flag: string): void {
-    this.flags.add(flag);
-  }
-
-  hasFlag(flag: string): boolean {
-    return this.flags.has(flag);
-  }
-
-  /** 修改角色好感度 */
-  modifyAffection(characterId: string, delta: number): void {
-    const current = this.affection.get(characterId) || 0;
-    this.affection.set(characterId, current + delta);
-  }
-
-  getAffection(characterId: string): number {
-    return this.affection.get(characterId) || 0;
-  }
-
-  /** 切换场景（带淡入淡出） */
-  switchScene(sceneName: string): void {
-    EventManager.emit(GameEvents.SCENE_CHANGE, sceneName);
-    director.loadScene(sceneName);
-  }
+  switchScene(sceneName: string): void { director.loadScene(sceneName); }
 
   onDestroy(): void {
-    if (GameManager._instance === this) {
-      GameManager._instance = null;
-    }
+    if (GameManager._instance === this) GameManager._instance = null;
   }
-}
-
-export enum GameState {
-  INIT,
-  READY,
-  PLAYING,
-  PAUSED,
-  ENDING,
 }
