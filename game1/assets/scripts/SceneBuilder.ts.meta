@@ -1,0 +1,11 @@
+{
+  "ver": "1.1.0",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "c9b0417c-bbf4-4566-ae48-53f17e68a65",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "importedAs": "db://assets/scripts/SceneBuilder.ts"
+  }
+}

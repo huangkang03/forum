@@ -9,7 +9,9 @@
       "Bash(ssh-keyscan -t ed25519 github.com)",
       "Bash(git *)",
       "Read(//c/Users/HK253/.claude//**)",
-      "Read(//c/Users/HK253/.claude/**)"
+      "Read(//c/Users/HK253/.claude/**)",
+      "Bash(rm -rf game1/.git)",
+      "Bash(cp -r assets/* game1/assets/)"
     ]
   }
 }
