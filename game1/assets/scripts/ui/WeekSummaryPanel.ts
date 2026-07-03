@@ -20,7 +20,7 @@ export class WeekSummaryPanel extends Component {
 
   onLoad(): void {
     EventManager.on(GameEvents.WEEK_EXECUTED, this.onWeekExecuted, this);
-    this.panel.active = false;
+    if (this.panel) this.panel.active = false;
   }
 
   private onWeekExecuted(result: WeekResult): void {

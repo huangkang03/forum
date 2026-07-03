@@ -33,10 +33,10 @@ export class CharacterDisplay extends Component {
     EventManager.on('EFFECT_SHAKE', this.onShake, this);
     EventManager.on('EFFECT_ZOOMIN', this.onZoomIn, this);
 
-    // 初始隐藏所有
-    this.charLeft.active = false;
-    this.charCenter.active = false;
-    this.charRight.active = false;
+    // 初始隐藏所有（由 SceneBuilder 赋值后才有效）
+    if (this.charLeft) this.charLeft.active = false;
+    if (this.charCenter) this.charCenter.active = false;
+    if (this.charRight) this.charRight.active = false;
   }
 
   /** 显示角色 */

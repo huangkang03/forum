@@ -144,12 +144,12 @@ export class SceneBuilder extends Component {
 
   private buildCharacterDisplay(parent: Node): void {
     const panel = this.createNode('CharacterDisplay', parent);
-    const charDisplay = panel.addComponent(CharacterDisplay);
 
     const charLeft = this.createCharSlot('CharLeft', panel, -200, 0);
     const charCenter = this.createCharSlot('CharCenter', panel, 0, 0);
     const charRight = this.createCharSlot('CharRight', panel, 200, 0);
 
+    const charDisplay = panel.addComponent(CharacterDisplay);
     charDisplay.charLeft = charLeft;
     charDisplay.charCenter = charCenter;
     charDisplay.charRight = charRight;
