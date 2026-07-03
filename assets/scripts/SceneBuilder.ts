@@ -36,7 +36,8 @@ export class SceneBuilder extends Component {
     const canvasComp = this.node.addComponent(Canvas) as Canvas;
     const scene = director.getScene()!;
     this.node.layer = 1 << 25; // UI_2D
-    this.node.setPosition(375, 667, 0);
+    this.node.setPosition(0, 0, 0);
+    (canvasComp as any)._alignCanvasWithScreen = true;
 
     // 关闭 3D 方向光
     for (const child of scene.children) {
