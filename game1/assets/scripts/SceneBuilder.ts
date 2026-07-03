@@ -22,17 +22,50 @@ const { ccclass, property } = _decorator;
 export class SceneBuilder extends Component {
   onLoad(): void {
     console.log('[SceneBuilder] onLoad START');
-    const test = new Node('TestLabel');
-    test.layer = Layers.Enum.UI_2D;
-    test.addComponent(UITransform).setContentSize(400, 60);
-    const lbl = test.addComponent(Label);
-    lbl.string = 'HELLO WORLD';
-    lbl.fontSize = 40;
-    lbl.color = Color.RED;
-    test.setParent(this.node);
-    test.setPosition(0, 0, 0);
-    console.log('[SceneBuilder] Test label created, parent active:', this.node.active, 'layer:', test.layer);
+    this.ensure2DCanvas();
+    this.buildScene();
     console.log('[SceneBuilder] onLoad DONE');
+  }
+
+  /** 确保存在 2D Canvas */
+  private ensure2DCanvas(): void {
+    if (this.node.getComponent(Canvas)) return;
+
+    const ui = this.node.getComponent(UITransform) || this.node.addComponent(UITransform);
+    ui.setContentSize(750, 1334);
+    const canvasComp = this.node.addComponent(Canvas) as Canvas;
+    const scene = director.getScene()!;
+    this.node.layer = 1 << 25; // UI_2D
+
+    // 找场景里的相机改为 2D
+    for (const child of scene.children) {
+      const cam = child.getComponent(Camera);
+      if (cam) {
+        (cam as any).projection = 0; // ORTHO
+        cam.orthoHeight = 667;
+        cam.near = 0;
+        cam.far = 2000;
+        cam.visibility = 0x420F0000; // UI_2D | DEFAULT layers
+        (cam as any).clearColor = new Color(40, 40, 60, 255);
+        (canvasComp as any)._cameraComponent = cam;
+        console.log('[SceneBuilder] Converted camera to 2D');
+        return;
+      }
+    }
+
+    // 如果没有相机，新建
+    const camNode = new Node('Camera2D');
+    camNode.layer = 1 << 25;
+    camNode.setParent(scene);
+    const newCam = camNode.addComponent(Camera);
+    (newCam as any).projection = 0;
+    newCam.orthoHeight = 667;
+    newCam.near = 0;
+    newCam.far = 2000;
+    newCam.visibility = 0x420F0000;
+    (newCam as any).clearColor = new Color(40, 40, 60, 255);
+    (canvasComp as any)._cameraComponent = newCam;
+    console.log('[SceneBuilder] Created new 2D camera');
   }
 
   private buildScene(): void {
