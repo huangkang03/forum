@@ -120,8 +120,8 @@ export class SceneBuilder extends Component {
 
   private buildDialoguePanel(parent: Node): void {
     const panel = this.createNode('DialoguePanel', parent);
-    panel.active = false;
-    const dialogue = panel.addComponent(DialoguePanel);
+    const dialogue = panel.addComponent(DialoguePanel); // onLoad fires here, registers events
+    panel.active = false; // then hide (onLoad also calls hide, safe to call twice)
 
     // 半透明底
     const bg = this.createNode('Bg', panel);
@@ -168,8 +168,8 @@ export class SceneBuilder extends Component {
 
   private buildChoicePanel(parent: Node): void {
     const panel = this.createNode('ChoicePanel', parent);
-    panel.active = false;
     const choice = panel.addComponent(ChoicePanel);
+    panel.active = false;
 
     const container = this.createNode('ButtonContainer', panel);
     const layout = container.addComponent(Layout);
@@ -221,8 +221,8 @@ export class SceneBuilder extends Component {
 
   private buildCalendarPanel(parent: Node): void {
     const panel = this.createNode('CalendarPanel', parent);
-    panel.active = false;
     const calendar = panel.addComponent(CalendarPanel);
+    panel.active = false;
 
     // 头部
     const phaseLabelNode = this.createNode('PhaseLabel', panel);
@@ -327,8 +327,8 @@ export class SceneBuilder extends Component {
 
   private buildWeekSummaryPanel(parent: Node): void {
     const panel = this.createNode('WeekSummaryPanel', parent);
-    panel.active = false;
     const summary = panel.addComponent(WeekSummaryPanel);
+    panel.active = false;
 
     const innerPanel = this.createNode('Panel', panel);
     this.addSprite(innerPanel, new Color(30, 30, 50, 240));
