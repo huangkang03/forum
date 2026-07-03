@@ -1,62 +1,47 @@
-import { _decorator, Component, Node, director, game } from 'cc';
-import { GameManager } from './core/GameManager';
+import { _decorator, Component, Node } from 'cc';
+import { GameManager, GameMode } from './core/GameManager';
 import { EventManager, GameEvents } from './core/EventManager';
-import { wxSetupShare, wxShowShareMenu } from './utils/WeChatPlatform';
+import { SaveManager } from './data/SaveManager';
+import { CharacterManager } from './character/CharacterManager';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 场景启动器 — 挂载在初始场景的根节点上
- *
- * 负责：
- * 1. 初始化所有核心管理器
- * 2. 配置微信分享
- * 3. 根据启动参数决定「新游戏」还是「继续游戏」
- */
 @ccclass('SceneBoot')
 export class SceneBoot extends Component {
-  @property(Node)
-  gameManagerNode: Node = null!;
+  @property(Node) gameManagerNode: Node = null!;
+  @property(Node) characterCreateNode: Node = null!;
 
-  onLoad(): void {
-    // 配置微信分享菜单
-    wxShowShareMenu();
-    wxSetupShare('樱花物语 - 剧情互动小游戏');
+  async start(): Promise<void> {
+    const cm = CharacterManager.instance;
+    const friend = cm.getChildhoodFriendDef();
+    cm.registerCharacter(friend);
 
-    // 监听场景加载
-    EventManager.once(GameEvents.SCENE_LOADED, () => {
-      this.startGame();
-    }, this);
-  }
-
-  private startGame(): void {
-    const gm = GameManager.instance;
-
-    // 检查是否有存档
-    const hasSave = this.checkHasSaveSync();
-
-    if (hasSave) {
-      // 自动读档继续
-      gm.continueGame();
+    const saves = await SaveManager.listSaves();
+    if (saves.length > 0) {
+      await SaveManager.load(saves[0].slot);
+      GameManager.instance.enterStoryMode();
+      EventManager.emit(GameEvents.GAME_LOADED, saves[0].data);
     } else {
-      // 新游戏
-      gm.startNewGame('chapter_1');
+      this.showCharacterCreate();
     }
   }
 
-  /** 同步检查是否存在存档（避免异步） */
-  private checkHasSaveSync(): boolean {
-    try {
-      if (typeof wx !== 'undefined' && wx.getStorageSync) {
-        return !!wx.getStorageSync('save_0');
-      }
-      return !!localStorage.getItem('save_0');
-    } catch {
-      return false;
-    }
+  private showCharacterCreate(): void {
+    if (this.characterCreateNode) this.characterCreateNode.active = true;
   }
 
-  onDestroy(): void {
-    EventManager.targetOff(this);
+  /** Called by character create UI button after player confirms */
+  onCharacterConfirmed(name: string, gender: 'male' | 'female'): void {
+    const gm = GameManager.instance;
+    gm.setCharacter(name, gender);
+
+    const cm = CharacterManager.instance;
+    const friend = cm.getChildhoodFriendDef();
+    cm.registerCharacter(friend);
+
+    if (this.characterCreateNode) this.characterCreateNode.active = false;
+    gm.enterStoryMode();
+    EventManager.emit(GameEvents.CHARACTER_CREATED, { name, gender });
+    EventManager.emit(GameEvents.DIALOGUE_START, 'chapter_1');
   }
 }
