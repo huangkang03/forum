@@ -21,7 +21,9 @@ const { ccclass, property } = _decorator;
 @ccclass('SceneBuilder')
 export class SceneBuilder extends Component {
   onLoad(): void {
+    console.log('[SceneBuilder] onLoad START');
     this.buildScene();
+    console.log('[SceneBuilder] onLoad DONE');
   }
 
   private buildScene(): void {
@@ -125,8 +127,8 @@ export class SceneBuilder extends Component {
     this.setSize(container, 600, 400);
     container.setPosition(0, -200, 0);
 
-    // 创建选项按钮预制体
-    const btnPrefab = new Node('ChoiceButtonPrefab');
+    // 创建选项按钮模板
+    const btnPrefab = this.createNode('ChoiceButtonTemplate', container);
     this.setSize(btnPrefab, 500, 52);
     const btnSprite = btnPrefab.addComponent(Sprite);
     btnSprite.color = new Color(60, 60, 80, 220);
@@ -384,6 +386,7 @@ export class SceneBuilder extends Component {
 
   private createNode(name: string, parent: Node): Node {
     const node = new Node(name);
+    node.layer = parent.layer; // 确保渲染层级正确
     node.addComponent(UITransform);
     node.setParent(parent);
     return node;
