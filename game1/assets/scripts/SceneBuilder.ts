@@ -22,7 +22,16 @@ const { ccclass, property } = _decorator;
 export class SceneBuilder extends Component {
   onLoad(): void {
     console.log('[SceneBuilder] onLoad START');
-    this.buildScene();
+    const test = new Node('TestLabel');
+    test.layer = Layers.Enum.UI_2D;
+    test.addComponent(UITransform).setContentSize(400, 60);
+    const lbl = test.addComponent(Label);
+    lbl.string = 'HELLO WORLD';
+    lbl.fontSize = 40;
+    lbl.color = Color.RED;
+    test.setParent(this.node);
+    test.setPosition(0, 0, 0);
+    console.log('[SceneBuilder] Test label created, parent active:', this.node.active, 'layer:', test.layer);
     console.log('[SceneBuilder] onLoad DONE');
   }
 
