@@ -266,7 +266,7 @@ export class SceneBuilder extends Component {
     execLabel.string = '执行本周';
     execLabel.fontSize = 24;
     execLabel.color = Color.WHITE;
-    execBtn.on(Button.EventType.CLICK, () => { calendar.onExecuteWeek(); });
+    execBtn.on(Button.EventType.CLICK, () => { console.log('[ExecuteBtn] CLICKED'); calendar.onExecuteWeek(); });
 
     calendar.phaseLabel = phaseLabel;
     calendar.weekLabel = weekLabel;

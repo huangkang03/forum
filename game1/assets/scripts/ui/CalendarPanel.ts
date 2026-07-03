@@ -58,6 +58,7 @@ export class CalendarPanel extends Component {
   }
 
   onExecuteWeek(): void {
+    console.log('[CalendarPanel] onExecuteWeek called, plan:', this._currentPlan?.weekNumber);
     CalendarManager.instance.executeWeek(this._currentPlan);
   }
 
