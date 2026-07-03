@@ -120,6 +120,7 @@ export class SceneBuilder extends Component {
 
   private buildDialoguePanel(parent: Node): void {
     const panel = this.createNode('DialoguePanel', parent);
+    this.setSize(panel, 750, 1334); // 全屏点击区域
     const dialogue = panel.addComponent(DialoguePanel); // onLoad fires here, registers events
     panel.active = false; // then hide (onLoad also calls hide, safe to call twice)
 
