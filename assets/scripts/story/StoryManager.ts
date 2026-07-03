@@ -165,11 +165,25 @@ export class StoryManager extends Component {
     }
   }
 
-  /** 章节结束 */
+  /** 章节结束 → 自动进入下一章 */
   private onChapterEnd(): void {
     this._isPlaying = false;
-    EventManager.emit(GameEvents.DIALOGUE_END);
-    // TODO: 跳转到下一章或返回主界面
+    if (!this._currentStory || !this._currentChapter) return;
+
+    const chapters = this._currentStory.chapters;
+    const currentIdx = chapters.findIndex(c => c.id === this._currentChapter!.id);
+    if (currentIdx >= 0 && currentIdx < chapters.length - 1) {
+      // 进入下一章
+      const nextCh = chapters[currentIdx + 1];
+      console.log('[StoryManager] Advancing to next chapter:', nextCh.id);
+      this.enterChapter(nextCh.id);
+    } else {
+      // 故事结束 → 进入日历模式
+      console.log('[StoryManager] Story finished, entering calendar mode');
+      EventManager.emit(GameEvents.DIALOGUE_END);
+      GameManager.instance.enterCalendarMode();
+      EventManager.emit(GameEvents.MODE_CHANGED, GameManager.instance.gameMode);
+    }
   }
 
   /** 检查条件组（全部满足才返回 true） */
