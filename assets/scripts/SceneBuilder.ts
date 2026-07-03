@@ -36,6 +36,12 @@ export class SceneBuilder extends Component {
     const canvasComp = this.node.addComponent(Canvas) as Canvas;
     const scene = director.getScene()!;
     this.node.layer = 1 << 25; // UI_2D
+    this.node.setPosition(375, 667, 0);
+
+    // 关闭 3D 方向光
+    for (const child of scene.children) {
+      if (child.name.includes('Light')) child.active = false;
+    }
 
     // 找场景里的相机改为 2D
     for (const child of scene.children) {
@@ -45,10 +51,13 @@ export class SceneBuilder extends Component {
         cam.orthoHeight = 667;
         cam.near = 0;
         cam.far = 2000;
-        cam.visibility = 0x420F0000; // UI_2D | DEFAULT layers
+        cam.visibility = 0x420F0000;
         (cam as any).clearColor = new Color(40, 40, 60, 255);
         (canvasComp as any)._cameraComponent = cam;
-        console.log('[SceneBuilder] Converted camera to 2D');
+        // 重置相机位置和旋转
+        child.setPosition(0, 0, 1000);
+        child.setRotationFromEuler(0, 0, 0);
+        console.log('[SceneBuilder] Converted camera to 2D, reset pos/rot');
         return;
       }
     }
