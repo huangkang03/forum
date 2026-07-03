@@ -1,159 +1,113 @@
 import { EventManager, GameEvents } from '../core/EventManager';
 import { GameManager } from '../core/GameManager';
+import { SchoolPhase, StatType } from './GameConfig';
 
-/**
- * 存档数据结构
- */
 export interface SaveData {
-  storyId: string;
-  dialogueIndex: number;
-  flags: string[];
-  affection: [string, number][]; // Map 序列化为键值对数组
+  version: number;
+  slot: number;
   timestamp: number;
+  player: {
+    playerName: string;
+    playerGender: 'male' | 'female';
+    currentPhase: SchoolPhase;
+    currentWeek: number;
+    energy: number;
+    stats: Record<StatType, number>;
+    flags: string[];
+    affection: [string, number][];
+  };
   saveName: string;
-  /** 存档预览 — 当前对话前30字 */
-  preview?: string;
 }
 
-/**
- * 存档管理器 — 支持本地存储和微信云存储
- */
 class SaveManagerCls {
-  private readonly SAVE_KEY_PREFIX = 'save_';
-  private readonly CLOUD_COLLECTION = 'game_saves';
-  private readonly MAX_SLOTS = 10;
+  private readonly KEY_PREFIX = 'pixel_campus_save_';
+  private readonly CLOUD_PATH = 'saves/';
+  private readonly SAVE_VERSION = 1;
+  private readonly MAX_SLOTS = 5;
 
-  /** 当前存档数据缓存 */
-  private _currentSave: SaveData | null = null;
-
-  /** 保存到指定档位 */
   async save(slot: number = 0): Promise<boolean> {
     const gm = GameManager.instance;
     const data: SaveData = {
-      storyId: gm.currentStoryId,
-      dialogueIndex: gm.currentDialogueIndex,
-      flags: Array.from(gm.flags),
-      affection: Array.from(gm.affection.entries()),
-      timestamp: Date.now(),
+      version: this.SAVE_VERSION, slot, timestamp: Date.now(),
+      player: {
+        playerName: gm.player.playerName,
+        playerGender: gm.player.playerGender,
+        currentPhase: gm.player.currentPhase,
+        currentWeek: gm.player.currentWeek,
+        energy: gm.player.energy,
+        stats: gm.player.stats,
+        flags: Array.from(gm.player.flags),
+        affection: Array.from(gm.player.affection.entries()),
+      },
       saveName: `存档 ${slot + 1}`,
     };
 
-    this._currentSave = data;
     const json = JSON.stringify(data);
+    this.setLocalSave(slot, json);
 
-    try {
-      // 本地存储
-      if (typeof wx !== 'undefined' && wx.setStorageSync) {
-        wx.setStorageSync(this.SAVE_KEY_PREFIX + slot, json);
-      } else {
-        localStorage.setItem(this.SAVE_KEY_PREFIX + slot, json);
-      }
+    try { await this.cloudUpload(slot, json); } catch {}
 
-      // 尝试同步到微信云存储
-      await this.cloudSave(slot, data);
-
-      EventManager.emit(GameEvents.GAME_SAVED, slot, data);
-      return true;
-    } catch (err) {
-      console.error('[SaveManager] 存档失败:', err);
-      return false;
-    }
+    EventManager.emit(GameEvents.GAME_SAVED, slot, data);
+    return true;
   }
 
-  /** 读档 */
   async load(slot: number = 0): Promise<SaveData | null> {
-    try {
-      let json: string | null = null;
+    let json: string | null = null;
+    try { json = await this.cloudDownload(slot); } catch {}
+    if (!json) json = this.getLocalSave(slot);
+    if (!json) return null;
 
-      // 优先从云存储读取
-      const cloudData = await this.cloudLoad(slot);
-      if (cloudData) {
-        this._currentSave = cloudData;
-        return cloudData;
-      }
-
-      // 本地存储
-      if (typeof wx !== 'undefined' && wx.getStorageSync) {
-        json = wx.getStorageSync(this.SAVE_KEY_PREFIX + slot);
-      } else {
-        json = localStorage.getItem(this.SAVE_KEY_PREFIX + slot);
-      }
-
-      if (json) {
-        const data = JSON.parse(json) as SaveData;
-        this._currentSave = data;
-        EventManager.emit(GameEvents.GAME_LOADED, data);
-        return data;
-      }
-    } catch (err) {
-      console.error('[SaveManager] 读档失败:', err);
-    }
-    return null;
+    const data = JSON.parse(json) as SaveData;
+    this.applySaveData(data);
+    EventManager.emit(GameEvents.GAME_LOADED, data);
+    return data;
   }
 
-  /** 快速保存（覆盖最新档位） */
-  async quickSave(): Promise<boolean> {
-    return this.save(0);
+  private applySaveData(data: SaveData): void {
+    const gm = GameManager.instance;
+    gm.player.playerName = data.player.playerName;
+    gm.player.playerGender = data.player.playerGender;
+    gm.player.currentPhase = data.player.currentPhase;
+    gm.player.currentWeek = data.player.currentWeek;
+    gm.player.energy = data.player.energy;
+    gm.player.stats = data.player.stats;
+    gm.player.flags = new Set(data.player.flags);
+    gm.player.affection = new Map(data.player.affection);
   }
 
-  /** 获取所有存档列表 */
   async listSaves(): Promise<{ slot: number; data: SaveData }[]> {
     const saves: { slot: number; data: SaveData }[] = [];
-
     for (let i = 0; i < this.MAX_SLOTS; i++) {
-      let json: string | null = null;
-      try {
-        if (typeof wx !== 'undefined' && wx.getStorageSync) {
-          json = wx.getStorageSync(this.SAVE_KEY_PREFIX + i);
-        } else {
-          json = localStorage.getItem(this.SAVE_KEY_PREFIX + i);
-        }
-        if (json) {
-          saves.push({ slot: i, data: JSON.parse(json) });
-        }
-      } catch { /* skip corrupt saves */ }
+      const json = this.getLocalSave(i);
+      if (json) { try { saves.push({ slot: i, data: JSON.parse(json) }); } catch {} }
     }
-
     saves.sort((a, b) => b.data.timestamp - a.data.timestamp);
     return saves;
   }
 
-  /** 删除存档 */
-  async deleteSave(slot: number): Promise<void> {
-    if (typeof wx !== 'undefined' && wx.removeStorageSync) {
-      wx.removeStorageSync(this.SAVE_KEY_PREFIX + slot);
-    } else {
-      localStorage.removeItem(this.SAVE_KEY_PREFIX + slot);
-    }
+  async deleteSave(slot: number): Promise<void> { this.removeLocalSave(slot); }
+
+  private setLocalSave(slot: number, json: string): void {
+    if (typeof wx !== 'undefined' && wx.setStorageSync) wx.setStorageSync(this.KEY_PREFIX + slot, json);
+    else localStorage.setItem(this.KEY_PREFIX + slot, json);
+  }
+  private getLocalSave(slot: number): string | null {
+    if (typeof wx !== 'undefined' && wx.getStorageSync) return wx.getStorageSync(this.KEY_PREFIX + slot);
+    return localStorage.getItem(this.KEY_PREFIX + slot);
+  }
+  private removeLocalSave(slot: number): void {
+    if (typeof wx !== 'undefined' && wx.removeStorageSync) wx.removeStorageSync(this.KEY_PREFIX + slot);
+    else localStorage.removeItem(this.KEY_PREFIX + slot);
   }
 
-  /** 微信云存储 */
-  private async cloudSave(slot: number, data: SaveData): Promise<void> {
+  private async cloudUpload(slot: number, json: string): Promise<void> {
     if (typeof wx === 'undefined' || !wx.cloud) return;
-    try {
-      const db = wx.cloud.database();
-      const collection = db.collection(this.CLOUD_COLLECTION);
-      // 先查是否存在
-      const exist = await collection.where({ _id: `save_${slot}` }).get();
-      if ((exist as any).data?.length > 0) {
-        await collection.doc(`save_${slot}`).update({ data });
-      } else {
-        await collection.add({ _id: `save_${slot}`, data });
-      }
-    } catch (err) {
-      console.warn('[SaveManager] 云存档同步失败:', err);
-    }
+    await wx.cloud.uploadFile({ cloudPath: this.CLOUD_PATH + `save_${slot}.json`, fileContent: json });
   }
-
-  private async cloudLoad(slot: number): Promise<SaveData | null> {
+  private async cloudDownload(slot: number): Promise<string | null> {
     if (typeof wx === 'undefined' || !wx.cloud) return null;
-    try {
-      const db = wx.cloud.database();
-      const result = await db.collection(this.CLOUD_COLLECTION).doc(`save_${slot}`).get();
-      return (result as any).data as SaveData;
-    } catch {
-      return null;
-    }
+    const res = await wx.cloud.downloadFile({ fileID: this.CLOUD_PATH + `save_${slot}.json` });
+    return (res as any).tempFilePath ? 'from_cloud' : null;
   }
 }
 
