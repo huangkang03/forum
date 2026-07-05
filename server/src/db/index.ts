@@ -5,16 +5,27 @@ let pool: mysql.Pool | null = null
 
 async function getPool(): Promise<mysql.Pool> {
   if (!pool) {
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306'),
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'forum',
-      waitForConnections: true,
-      connectionLimit: 10,
-      charset: 'utf8mb4',
-    })
+    // Railway injects MYSQL_URL, local dev uses individual vars
+    const dbUrl = process.env.MYSQL_URL || process.env.DATABASE_URL
+    if (dbUrl) {
+      pool = mysql.createPool({
+        uri: dbUrl,
+        waitForConnections: true,
+        connectionLimit: 10,
+        charset: 'utf8mb4',
+      })
+    } else {
+      pool = mysql.createPool({
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306'),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '123456',
+        database: process.env.DB_NAME || 'forum',
+        waitForConnections: true,
+        connectionLimit: 10,
+        charset: 'utf8mb4',
+      })
+    }
   }
   return pool
 }
