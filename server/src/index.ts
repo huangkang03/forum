@@ -35,6 +35,8 @@ app.use('/api/friends', friendRoutes)
 app.use('/api/admin', adminRoutes)
 
 async function start() {
+  console.log('MYSQL_URL:', process.env.MYSQL_URL ? 'SET' : 'NOT SET')
+  console.log('MYSQLHOST:', process.env.MYSQLHOST || 'NOT SET')
   await getDb()
   console.log('Database initialized')
   app.listen(PORT, () => {
