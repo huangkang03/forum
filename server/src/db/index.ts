@@ -40,6 +40,13 @@ async function initSchema() {
   for (const stmt of statements) {
     await p.execute(stmt)
   }
+
+  // Migration: ensure avatar_url is TEXT for base64 storage
+  try {
+    await p.execute("ALTER TABLE users MODIFY avatar_url TEXT NOT NULL")
+  } catch {
+    // already TEXT, ignore
+  }
 }
 
 let initialized = false
