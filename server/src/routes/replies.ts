@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import { getDb } from '../db/index.js'
-import { authenticate } from '../middleware/auth.js'
+import { authenticate, checkMuted } from '../middleware/auth.js'
 
 const router = Router({ mergeParams: true })
 
@@ -63,7 +63,7 @@ router.get('/', async (req: Request, res: Response) => {
   res.json({ data: topLevel, total, page, limit, totalPages })
 })
 
-router.post('/', authenticate, replyLimiter, async (req: Request, res: Response) => {
+router.post('/', authenticate, checkMuted, replyLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const postId = parseInt(req.params.id as string)
   if (isNaN(postId)) {

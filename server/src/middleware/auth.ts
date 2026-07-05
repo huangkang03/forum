@@ -52,6 +52,24 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   })
 }
 
+export async function checkMuted(req: Request, res: Response, next: NextFunction) {
+  // Dynamic import to avoid circular dependency
+  const { getDb } = await import('../db/index.js')
+  const db = await getDb()
+  const user = await db.prepare('SELECT muted_until FROM users WHERE id = ?').get(req.user!.userId)
+  if (user?.muted_until) {
+    const until = new Date(user.muted_until + 'Z')
+    if (until > new Date()) {
+      const hours = Math.ceil((until.getTime() - Date.now()) / 3600000)
+      res.status(403).json({ error: `您已被禁言，剩余约 ${hours} 小时` })
+      return
+    }
+    // Mute expired, clear it
+    await db.prepare('UPDATE users SET muted_until = NULL WHERE id = ?').run(req.user!.userId)
+  }
+  next()
+}
+
 export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (header && header.startsWith('Bearer ')) {

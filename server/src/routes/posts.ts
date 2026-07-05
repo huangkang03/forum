@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import rateLimit from 'express-rate-limit'
 import { getDb } from '../db/index.js'
-import { authenticate, optionalAuth } from '../middleware/auth.js'
+import { authenticate, optionalAuth, checkMuted } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -72,7 +72,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
   res.json({ data: posts, total, page, limit, totalPages })
 })
 
-router.post('/', authenticate, createPostLimiter, async (req: Request, res: Response) => {
+router.post('/', authenticate, checkMuted, createPostLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const { title, content, category } = req.body
 

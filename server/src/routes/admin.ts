@@ -120,4 +120,22 @@ router.post('/avatars/:userId/reject', async (req: Request, res: Response) => {
   res.json({ message: '头像已拒绝' })
 })
 
+// Mute user (hours: number of hours to mute, 0 to unmute)
+router.put('/users/:id/mute', async (req: Request, res: Response) => {
+  const db = await getDb()
+  const id = parseInt(req.params.id as string)
+  const { hours } = req.body
+
+  if (isNaN(id)) { res.status(400).json({ error: '无效的用户 ID' }); return }
+
+  if (hours === 0 || !hours) {
+    await db.prepare('UPDATE users SET muted_until = NULL WHERE id = ?').run(id)
+    res.json({ message: '已解除禁言' })
+  } else {
+    const until = new Date(Date.now() + hours * 3600000).toISOString().replace('T', ' ').slice(0, 19)
+    await db.prepare('UPDATE users SET muted_until = ? WHERE id = ?').run(until, id)
+    res.json({ message: `已禁言 ${hours} 小时`, muted_until: until })
+  }
+})
+
 export default router

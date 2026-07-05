@@ -10,6 +10,7 @@ interface AdminUser {
   username: string
   avatar_url: string
   pending_avatar?: string
+  muted_until?: string
   role: 'user' | 'admin'
   created_at: string
 }
@@ -64,6 +65,15 @@ export default function AdminPage() {
       setPendingAvatars((prev) => prev.filter((u) => u.id !== userId))
       setMessage('头像已通过审核')
       setTimeout(() => setMessage(''), 3000)
+    } catch { setMessage('操作失败'); setTimeout(() => setMessage(''), 3000) }
+  }
+
+  const handleMute = async (userId: number, hours: number) => {
+    try {
+      await api.put(`/admin/users/${userId}/mute`, { hours })
+      setMessage(hours === 0 ? '已解除禁言' : `已禁言 ${hours} 小时`)
+      setTimeout(() => setMessage(''), 3000)
+      fetchData()
     } catch { setMessage('操作失败'); setTimeout(() => setMessage(''), 3000) }
   }
 
@@ -124,6 +134,21 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {u.muted_until && new Date(u.muted_until + 'Z') > new Date() ? (
+                    <button onClick={() => handleMute(u.id, 0)}
+                      className="px-2 py-1 bg-cinnabar text-white text-xs rounded-lg hover:bg-cinnabar-dark">
+                      解除禁言
+                    </button>
+                  ) : u.id !== user?.id && (
+                    <select onChange={(e) => { const h = parseInt(e.target.value); if (h) handleMute(u.id, h); e.target.value = '' }}
+                      className="border border-warm rounded-lg px-2 py-1 text-xs">
+                      <option value="">禁言…</option>
+                      <option value="1">1 小时</option>
+                      <option value="6">6 小时</option>
+                      <option value="24">24 小时</option>
+                      <option value="72">3 天</option>
+                    </select>
+                  )}
                   {u.id === user?.id ? (
                     <span className="text-xs text-ink/30">当前用户</span>
                   ) : (

@@ -48,6 +48,9 @@ async function initSchema() {
   try {
     await p.execute("ALTER TABLE users ADD COLUMN pending_avatar MEDIUMTEXT DEFAULT NULL")
   } catch { /* ignore */ }
+  try {
+    await p.execute("ALTER TABLE users ADD COLUMN muted_until DATETIME DEFAULT NULL")
+  } catch { /* ignore */ }
 }
 
 let initialized = false
