@@ -1,8 +1,17 @@
 import { Router, Request, Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import { getDb } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
 
 const router = Router({ mergeParams: true })
+
+const replyLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10 秒
+  max: 1,
+  message: { error: '回复太频繁，请 10 秒后再试' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 router.get('/', async (req: Request, res: Response) => {
   const db = await getDb()
@@ -54,7 +63,7 @@ router.get('/', async (req: Request, res: Response) => {
   res.json({ data: topLevel, total, page, limit, totalPages })
 })
 
-router.post('/', authenticate, async (req: Request, res: Response) => {
+router.post('/', authenticate, replyLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const postId = parseInt(req.params.id as string)
   if (isNaN(postId)) {

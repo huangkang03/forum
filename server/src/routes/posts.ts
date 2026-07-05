@@ -1,10 +1,19 @@
 import { Router, Request, Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import { getDb } from '../db/index.js'
 import { authenticate, optionalAuth } from '../middleware/auth.js'
 
 const router = Router()
 
 const VALID_CATEGORIES = ['综合', '科技', '生活', '学习', '其他']
+
+const createPostLimiter = rateLimit({
+  windowMs: 30 * 1000, // 30 秒
+  max: 1,
+  message: { error: '发帖太频繁，请 30 秒后再试' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 router.get('/', optionalAuth, async (req: Request, res: Response) => {
   const db = await getDb()
@@ -63,7 +72,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
   res.json({ data: posts, total, page, limit, totalPages })
 })
 
-router.post('/', authenticate, async (req: Request, res: Response) => {
+router.post('/', authenticate, createPostLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const { title, content, category } = req.body
 
