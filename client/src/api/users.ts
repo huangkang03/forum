@@ -14,8 +14,6 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<UserPub
 export async function uploadAvatar(file: File): Promise<{ user: UserPublic; avatar_url: string }> {
   const formData = new FormData()
   formData.append('avatar', file)
-  const res = await api.put<{ user: UserPublic; avatar_url: string }>('/users/me/avatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await api.put<{ user: UserPublic; avatar_url: string }>('/users/me/avatar', formData)
   return res.data
 }
