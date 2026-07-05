@@ -70,10 +70,13 @@ export default function AdminPage() {
 
   const handleMute = async (userId: number, hours: number) => {
     try {
-      await api.put(`/admin/users/${userId}/mute`, { hours })
-      setMessage(hours === 0 ? '已解除禁言' : `已禁言 ${hours} 小时`)
+      const res = await api.put(`/admin/users/${userId}/mute`, { hours })
+      setMessage(res.data.message)
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u
+        return { ...u, muted_until: hours === 0 ? undefined : res.data.muted_until }
+      }))
       setTimeout(() => setMessage(''), 3000)
-      fetchData()
     } catch { setMessage('操作失败'); setTimeout(() => setMessage(''), 3000) }
   }
 
