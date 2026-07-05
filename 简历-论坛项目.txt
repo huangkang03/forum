@@ -1,0 +1,4 @@
+全栈论坛社区 | React + TypeScript + Tailwind CSS + Node.js + Express + MySQL
+独立完成一个前后端分离的社区论坛，支持注册登录（JWT + refresh token 自动续期）、帖子发布/分类筛选/搜索/分页、嵌套回复、点赞（乐观更新）、好友系统（申请/接受/拒绝及消息提醒）、头像上传与管理员审核、管理员后台（用户角色管理、内容审核、头像审批）。前端使用 React Router v6 + Context 状态管理 + Axios 拦截器，后端使用 Express 中间件权限控制，数据库设计含 5 张表与外键约束，部署于 Railway（含 MySQL 托管），线上可访问。
+
+技术亮点：Monorepo 目录结构（npm workspaces），自定义数据库抽象层（兼容 SQLite/MySQL 切换），生产环境适配 Railway 环境变量自动连接，全中文界面，独立设计系统（Tailwind 自定义主题）。

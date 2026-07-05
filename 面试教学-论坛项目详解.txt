@@ -1,0 +1,255 @@
+═══════════════════════════════════════════════════════════
+面试教学 · 全栈论坛项目详解
+═══════════════════════════════════════════════════════════
+
+一、项目概述
+────────────────────────────────────────────
+
+这是一个从零搭建的全栈社区论坛，完成独立设计、编码、部署全流程。
+核心数据：5 张数据表、25+ 个 API 接口、7 个前端页面、线上可访问。
+
+前端：React 18 + TypeScript + Vite + Tailwind CSS + React Router v6 + Axios
+后端：Node.js + Express + TypeScript + MySQL + JWT 认证
+部署：Railway（前后端合并部署，同源策略免 CORS）
+
+目录结构：
+  learn/
+  ├── client/           # 前端 React SPA
+  │   └── src/
+  │       ├── api/      # API 请求封装
+  │       ├── components/ # 可复用组件
+  │       ├── context/  # 全局状态
+  │       ├── hooks/    # 自定义 Hook
+  │       ├── pages/    # 页面级组件
+  │       └── types/    # TypeScript 类型定义
+  └── server/           # 后端 Express
+      └── src/
+          ├── db/       # 数据库连接 + Schema
+          ├── middleware/# 中间件（认证、权限）
+          ├── routes/   # 路由控制器
+          └── types/    # TypeScript 类型定义
+
+
+二、数据库设计
+────────────────────────────────────────────
+
+5 张表，全部使用 InnoDB 引擎 + utf8mb4 字符集 + 外键约束：
+
+users（用户）
+  - role ENUM('user','admin') 区分普通用户和管理员
+  - avatar_url MEDIUMTEXT 存 SVG data URL 或 base64 图片
+  - pending_avatar 存待审核头像（管理员审核后才生效）
+  - 密码用 bcrypt 加盐哈希（10 轮），绝不存明文
+
+posts（帖子）
+  - category 用 CHECK 约束限制为 5 个中文分类
+  - 外键关联 users(id)
+
+replies（回复）
+  - parent_reply_id 自引用外键，实现嵌套回复
+  - 插入时校验最大两层（parent 的 parent 必须为 NULL）
+  - ON DELETE CASCADE 帖子删除时联动删除
+
+likes（点赞）
+  - UNIQUE(user_id, post_id) 防止重复点赞
+  - ON DELETE CASCADE 帖子删除时联动删除
+
+friendships（好友）
+  - UNIQUE(from_user_id, to_user_id) 两人之间只有一条记录
+  - status ENUM('pending','accepted','rejected') 管理申请状态
+  - 查好友列表时 OR 条件匹配双向关系
+
+为什么选 MySQL 而不是 MongoDB？
+  - 论坛数据是强关系型（用户→帖子→回复→点赞），适合关系型数据库
+  - 外键保证数据一致性（删帖自动清回复和点赞）
+  - MySQL 在 Windows 和 Linux 都能跑，Railway 有托管服务
+
+
+三、认证系统（面试高频重点）
+────────────────────────────────────────────
+
+▸ 双 Token 机制：
+  access token   — 有效期 15 分钟，存在内存变量中（JS 闭包），不持久化
+  refresh token  — 有效期 7 天，存在 localStorage
+
+  为什么 15 分钟这么短？——如果 access token 被盗，攻击窗口只有 15 分钟。
+  为什么 refresh token 在 localStorage？——需要跨标签页共享、页面刷新不丢。
+  为什么 access token 在内存？——XSS 攻击无法读取闭包变量。
+
+▸ 完整登录流程：
+  1. 用户登录 → 后端验证密码（bcrypt.compare）→ 签发双 token → 返回用户信息 + tokens
+  2. 前端存储：accessToken 存入模块级变量，refreshToken 存入 localStorage
+  3. 每次请求：axios 请求拦截器自动附加 Authorization: Bearer <accessToken>
+  4. Token 过期 (401)：响应拦截器用 refresh token 换新 access token，重试原请求
+  5. refresh 也过期：清除存储 → 派发 window 事件 'auth:logout' → AuthContext 监听事件清空用户状态
+  6. 页面刷新自动登录：AuthContext 挂载时检查 localStorage 有 refresh token → 调用 /api/auth/refresh → 成功后调用 /api/auth/me 获取用户信息 → 恢复登录态
+
+▸ 三个 Express 中间件：
+  authenticate   — 必须带有效 token，否则 401。用在发帖、回复、点赞等
+  optionalAuth   — 有 token 就解析挂到 req.user，没有也继续。用在 GET 帖子列表/详情
+  requireAdmin   — authenticate 之后检查 role === 'admin'，否则 403。用在管理接口
+
+▸ JWT Payload 存什么？为什么？
+  { userId, username, role }
+  只存必要的鉴权字段。不存密码、邮箱等敏感信息——JWT 只是 base64 编码，任何人可解码（不可篡改因为有签名）。role 放在 payload 避免每次权限检查都要查数据库。
+
+▸ 安全性考虑：
+  1. 密码 bcrypt(bcryptjs) 加盐 10 轮，抗彩虹表
+  2. 登录失败统一返回「用户名或密码错误」——不区分是用户名不存在还是密码错，防用户名枚举
+  3. 注册用户名校验长度(3-30)+ 禁空格
+  4. JWT 用不同密钥签名 access/refresh token，一个泄露不影响另一个
+
+
+四、前端架构
+────────────────────────────────────────────
+
+▸ 状态管理：React Context + useReducer 等价模式
+  AuthContext 管理全局认证状态（user / isAuthenticated / isLoading）
+  - login / register / logout 方法在 Context 内封装
+  - 组件通过 useAuth() 自定义 Hook 访问
+  - 为什么不用 Redux？——项目规模小，Context 足够。面试要能解释这个取舍
+
+▸ 路由设计：React Router v6
+  /           → HomePage（帖子列表）
+  /login      → LoginPage
+  /register   → RegisterPage
+  /posts/new  → CreatePostPage（ProtectedRoute 包裹）
+  /posts/:id  → PostDetailPage
+  /profile/:id → ProfilePage
+  /search     → SearchPage
+  /friends    → FriendsPage（ProtectedRoute 包裹）
+  /admin      → AdminPage（ProtectedRoute 包裹，内部二次校验 role）
+
+▸ ProtectedRoute 组件：
+  接收 isLoading 状态——应用初始加载时可能在检查 refresh token，
+  此时不急于跳登录页，而是显示 loading 动画。只有确认未认证才重定向。
+
+▸ URL 驱动状态（HomePage 的关键设计）：
+  筛选条件（分类、排序、搜索、页码）全部存在 URL 的 query string 里。
+  好处：用户复制 URL 分享给朋友，朋友打开看到同样的筛选结果。
+  实现：useSearchParams() 读取 → 传给 API → 更新时用 setSearchParams()
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = searchParams.get('page') || '1'
+  const category = searchParams.get('category') || ''
+
+▸ 乐观更新（LikeButton）：
+  用户点击点赞 → 立即更新 UI（liked + count）→ 发 API 请求 →
+  成功：用服务端返回值修正 count → 失败：回滚到之前的状态。
+  为什么这样做？——消除网络延迟带来的操作顿感，用户体验更流畅。
+  React 中用一个 state 存当前状态，try/catch 处理回滚。
+
+▸ axios 封装（client.ts）：
+  - 统一 baseURL 和请求头
+  - 请求拦截器：自动附加 Authorization header
+  - 响应拦截器：处理 401 → 刷新 token → 重试请求
+  - refresh 请求去重：多个并发请求同时 401，只有第一个走 refresh，
+    其他共享同一个 Promise（refreshPromise 闭包变量）
+
+▸ 头像显示 getAvatarUrl()：
+  三种 URL 模式兼容：
+  1. https://...      外部链接（遗留 DiceBear），直接返回
+  2. data:image/...   本地生成的 SVG 或 base64，直接返回
+  3. /uploads/...     剩余的相对路径，开发环境 Vite proxy 转发，生产环境留空
+
+
+五、后端架构
+────────────────────────────────────────────
+
+▸ 数据库抽象层（db/index.ts）——可以答的设计亮点
+  设计了一个类似 better-sqlite3 的 API：db.prepare(sql).get(params) / .all(params) / .run(params)
+  内部用 mysql2 的 pool.query() 实现。好处：
+  1. 路由代码简洁直观，不需要每次写 pool.execute()
+  2. 参数自动参数化，防 SQL 注入
+  3. 如果以后换数据库（PostgreSQL），只改这一层即可
+
+  mysql2 选 query() 而非 execute() 的原因：
+  execute() 用 MySQL 服务端预编译语句，参数绑定规则和 mysql2 换码方式不一致，出现过 "Incorrect arguments to mysqld_stmt_execute" 错误。query() 用客户端参数化，更可靠。
+
+▸ 启动时自动建表（initSchema）：
+  读取 schema.ts 中的 SQL 字符串 → 分号分割 → 逐个执行 CREATE TABLE IF NOT EXISTS
+  之后执行迁移语句（ALTER TABLE），用 try/catch 包裹确保可重复执行不报错。
+  这避免了手动管理数据库迁移的麻烦。
+
+▸ 回复嵌套的设计：
+  数据库存平铺结构（每条回复一个 parent_reply_id），前端处理成树。
+  GET 时用 Map 做 O(n) 的树构建：先遍历一轮建 Map<id, node>，第二轮把子节点挂到父节点的 children 数组。
+  插入时限制最大两层：如果 parent 本身也有 parent_reply_id，拒绝插入。
+
+▸ 好友系统的双向查询：
+  好友关系存一条记录 (from, to, status)。
+  查好友列表时需要查双向：WHERE (from = me OR to = me) AND status = 'accepted' AND 对方 id != me
+  发送申请时如果检测到对方已经发了申请（to = me 且 status = pending），直接自动接受。
+
+
+六、部署架构
+────────────────────────────────────────────
+
+▸ 平台选择：
+  为什么不用 Vercel？——vercel.app 域名在国内被 DNS 污染，访问不了。
+  为什么 Railway？——提供 MySQL 托管 + Node 部署，一条龙。每月 $5 起步。
+  为什么前后端合并部署？——免 CORS 配置，单域名访问，国内直连。
+
+▸ 部署流程：
+  1. 代码推 GitHub
+  2. Railway 关联仓库 → 自动检测 Node.js 项目 → npm install + npm start
+  3. 启动时自动连接 Railway 提供的 MySQL（通过 MYSQL_URL 环境变量）
+  4. Express 同时提供 API (/api/*) 和前端静态文件 (Vite 构建产物)
+  5. SPA 回退：任何非 API 路径都返回 index.html（React Router 接管路由）
+
+▸ 环境变量（本地 .env vs Railway）：
+  本地：DB_HOST=localhost, DB_USER=root, DB_PASSWORD=123456
+  Railway：自动注入 MYSQL_URL，代码优先读取（process.env.MYSQL_URL || process.env.DATABASE_URL）
+
+
+七、踩过的坑（面试加分项）
+────────────────────────────────────────────
+
+1. Content-Type 导致上传失败
+   设置了 axios 默认 Content-Type: application/json，导致 FormData 被转成 JSON，
+   图片二进制数据被破坏为 "{}"。排查了很久才定位到 axios 的 transformRequest 逻辑。
+   → 教训：上传文件时不要设 Content-Type，让 axios/浏览器自动加 multipart boundary。
+
+2. TEXT vs MEDIUMTEXT
+   MySQL TEXT 最大 65KB，base64 编码后图片轻松超限，导致静默截断或报错。
+   → 教训：存 base64 要用 MEDIUMTEXT(16MB) 或 LONGTEXT(4GB)。
+
+3. Express 路由挂载
+   回复和点赞的 Router 最初挂在 /api/posts 下，路由定义为 /，没有 :id 参数。
+   改到 /api/posts/:id/replies 后 mergeParams:true 才能正确拿到 post ID。
+
+4. DiceBear 国内无法访问
+   默认头像用的 api.dicebear.com 在国内被墙，所有用户头像 404。
+   → 改为服务端生成 SVG 字母头像，零外部依赖，彻底解决。
+
+5. Railway 配置文件存储
+   /uploads/ 目录在容器重启后会丢失，免费版也不支持 Volume。
+   → 改为 base64 存数据库，头像永不丢失。
+
+
+八、常见面试追问 & 参考答案
+────────────────────────────────────────────
+
+Q: 为什么用 JWT 而不是 Session？
+A: JWT 无状态，无需服务端存 session，水平扩展方便。这个项目是单服务器，Session 也可以，但 JWT 更适合前后端分离架构，前端存 token 就能发请求，不依赖 cookie。
+
+Q: JWT 怎么防篡改？
+A: JWT 由三部分组成：header.payload.signature。第三部分是前两部分用密钥 HMAC-SHA256 签名。任何人改了 payload，签名就对不上，服务端 verify 时会失败。
+
+Q: XSS 攻击拿到了 localStorage 的 refresh token 怎么办？
+A: 确实是个风险。缓解措施：access token 15 分钟过期限制攻击窗口、HttpOnly cookie 存 token 更安全（但本项目没做）、后端可以加 refresh token rotation（每次刷新换一个新的 refresh token，旧 token 失效）。
+
+Q: 如果用户量大了，SQLite/MySQL 扛不住怎么办？
+A: 当前 SQLite 已换成 MySQL。进一步优化：读多写少的帖子列表加 Redis 缓存、数据库读写分离（主库写入，从库读取）、帖子搜索用 Elasticsearch 替代 MySQL LIKE。
+
+Q: 你怎么做前端状态管理？
+A: 小型项目用 React Context + useReducer 足够。Context 适合不频繁变化的全局状态（当前用户信息）。频繁变化的状态（表单输入、列表数据）用组件内 useState。没引入 Redux 因为增加了样板代码却解决不了当前规模的问题。
+
+Q: 项目里最难的技术点是什么？
+A: Token 自动刷新 + 并发请求去重的设计。需要考虑：多个请求同时返回 401 时只发一次 refresh 请求（用 Promise 去重），refresh 成功后重试原请求，refresh 失败后整个应用退出登录。这个逻辑在 axios 响应拦截器里用闭包实现。
+
+Q: 怎么保证代码质量？
+A: 前后端都用 TypeScript（严格模式 strict: true），编译期就能发现大部分类型错误。后端路由每个入参都做校验（类型 + 长度 + 格式），不信任前端传来的任何数据。SQL 全部用参数化查询，防注入。
+
+Q: 如果要加一个新功能（比如私信），你怎么做？
+A: 1) 数据库加 messages 表（sender_id, receiver_id, content, read, created_at）；2) 后端加 /api/messages 路由；3) 前端加消息页面和导航栏未读小红点。整个流程和现有的朋友圈类似，可以参考 friendships 的实现模式。

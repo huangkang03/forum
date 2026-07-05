@@ -1,8 +1,26 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import rateLimit from 'express-rate-limit'
 import { getDb } from '../db/index.js'
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, authenticate } from '../middleware/auth.js'
 import type { UserPublic } from '../types/index.js'
+
+// 同一 IP 每小时最多注册 3 次，防恶意注册
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { error: '注册次数过多，请稍后再试' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: '登录尝试次数过多，请 15 分钟后再试' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 const router = Router()
 
@@ -28,7 +46,7 @@ function toPublic(user: { id: number; username: string; avatar_url: string; bio:
   }
 }
 
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', registerLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const { username, password } = req.body
 
@@ -77,7 +95,7 @@ router.post('/register', async (req: Request, res: Response) => {
   res.status(201).json({ user: toPublic(user), accessToken, refreshToken })
 })
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const db = await getDb()
   const { username, password } = req.body
 
