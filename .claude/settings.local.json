@@ -54,7 +54,8 @@
       "Bash(git -C D:/hk/learn commit -m \"feat: rate limit post \\(1/30s\\) and reply \\(1/10s\\) creation\")",
       "Bash(rm -rf ../server/public)",
       "Bash(cp -r dist ../server/public)",
-      "Bash(git -C D:/hk/learn commit -m \"fix: mute state updates instantly without full page reload\")"
+      "Bash(git -C D:/hk/learn commit -m \"fix: mute state updates instantly without full page reload\")",
+      "Bash(git -C D:/hk/learn commit -m \"fix: simplify mute button check — truthy muted_until shows unmute\")"
     ]
   }
 }
