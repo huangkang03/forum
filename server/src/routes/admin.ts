@@ -55,7 +55,7 @@ router.delete('/replies/:id', async (req: Request, res: Response) => {
 router.get('/users', async (req: Request, res: Response) => {
   const db = await getDb()
   const users = await db.prepare(
-    'SELECT id, username, avatar_url, role, created_at FROM users ORDER BY created_at DESC'
+    'SELECT id, username, avatar_url, muted_until, role, created_at FROM users ORDER BY created_at DESC'
   ).all()
 
   res.json({ users })
