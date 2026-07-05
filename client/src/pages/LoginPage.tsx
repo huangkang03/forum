@@ -18,8 +18,7 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       await login(username, password)
-      const redirect = searchParams.get('redirect') || '/'
-      navigate(redirect, { replace: true })
+      navigate(searchParams.get('redirect') || '/', { replace: true })
     } catch (err: any) {
       setError(err.response?.data?.error || '登录失败')
     } finally {
@@ -28,43 +27,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-12">
-      <h1 className="text-2xl font-bold text-center mb-6">登录</h1>
-      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded">{error}</div>
-        )}
+    <div className="max-w-sm mx-auto mt-16">
+      <h1 className="text-2xl font-bold text-center mb-2 font-display text-ink">欢迎回来</h1>
+      <p className="text-center text-ink/40 text-sm mb-8">登录你的账号继续参与讨论</p>
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-warm p-6 space-y-4">
+        {error && <div className="bg-cinnabar/5 text-cinnabar text-sm px-3 py-2 rounded-lg">{error}</div>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            autoComplete="username"
-          />
+          <label className="block text-sm font-medium text-ink/60 mb-1">用户名</label>
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+            className="w-full bg-paper border border-warm rounded-lg px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-cinnabar transition-colors" autoComplete="username" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            autoComplete="current-password"
-          />
+          <label className="block text-sm font-medium text-ink/60 mb-1">密码</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-paper border border-warm rounded-lg px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-cinnabar transition-colors" autoComplete="current-password" />
         </div>
-        <button
-          type="submit"
-          disabled={submitting || !username || !password}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={submitting || !username || !password}
+          className="w-full bg-cinnabar text-white py-2.5 rounded-lg font-medium hover:bg-cinnabar-dark disabled:opacity-50 transition-colors">
           {submitting ? '登录中…' : '登录'}
         </button>
       </form>
-      <p className="text-sm text-center text-gray-500 mt-4">
-        还没有账号？{' '}
-        <Link to="/register" className="text-indigo-600 hover:underline">立即注册</Link>
+      <p className="text-sm text-center text-ink/40 mt-4">
+        还没有账号？<Link to="/register" className="text-cinnabar hover:underline">立即注册</Link>
       </p>
     </div>
   )

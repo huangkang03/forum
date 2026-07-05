@@ -42,15 +42,15 @@ export default function SearchPage() {
 
       {loading && (
         <div className="flex justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-cinnabar border-t-transparent rounded-full" />
         </div>
       )}
 
-      {error && <p className="text-center text-red-500 py-10">{error}</p>}
+      {error && <p className="text-center text-cinnabar py-10">{error}</p>}
 
       {!loading && !error && q && posts.length === 0 && (
         <div className="text-center py-20">
-          <p className="text-gray-400 text-lg">未找到与 "{q}" 相关的结果</p>
+          <p className="text-ink/30 text-lg">未找到与 "{q}" 相关的结果</p>
         </div>
       )}
 

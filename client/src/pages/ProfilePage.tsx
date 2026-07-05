@@ -115,7 +115,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-cinnabar border-t-transparent rounded-full" />
       </div>
     )
   }
@@ -123,17 +123,17 @@ export default function ProfilePage() {
   if (error || !profile) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-500">{error || '用户不存在'}</p>
+        <p className="text-cinnabar">{error || '用户不存在'}</p>
       </div>
     )
   }
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+      <div className="bg-white border border-warm rounded-xl p-6 mb-6">
         <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
-            <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-gray-200 object-cover" />
+            <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-warm object-cover" />
             {isOwn && (
               <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,13 +167,13 @@ export default function ProfilePage() {
                     <button
                       onClick={handleAddFriend}
                       disabled={friendLoading}
-                      className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                      className="px-3 py-1 bg-cinnabar text-white text-sm rounded-xl hover:bg-cinnabar-dark disabled:opacity-40"
                     >
                       {friendLoading ? '处理中…' : '加好友'}
                     </button>
                   )}
                   {friendStatus.status === 'pending' && friendStatus.isSender && (
-                    <button disabled className="px-3 py-1 bg-gray-200 text-gray-500 text-sm rounded-lg cursor-not-allowed">
+                    <button disabled className="px-3 py-1 bg-warm text-ink/40 text-sm rounded-xl cursor-not-allowed">
                       已发送申请
                     </button>
                   )}
@@ -182,14 +182,14 @@ export default function ProfilePage() {
                       <button
                         onClick={handleAccept}
                         disabled={friendLoading}
-                        className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                        className="px-3 py-1 bg-cinnabar text-white text-sm rounded-xl hover:bg-cinnabar-dark disabled:opacity-40"
                       >
                         接受申请
                       </button>
                       <button
                         onClick={handleRemoveFriend}
                         disabled={friendLoading}
-                        className="px-3 py-1 border border-gray-300 text-sm rounded-lg text-gray-600 hover:bg-gray-50"
+                        className="px-3 py-1 border border-warm text-sm rounded-xl text-ink/60 hover:bg-paper"
                       >
                         拒绝
                       </button>
@@ -197,11 +197,11 @@ export default function ProfilePage() {
                   )}
                   {friendStatus.status === 'accepted' && (
                     <div className="flex gap-2">
-                      <span className="px-3 py-1 bg-gray-100 text-gray-500 text-sm rounded-lg">已是好友</span>
+                      <span className="px-3 py-1 bg-paper text-ink/40 text-sm rounded-xl">已是好友</span>
                       <button
                         onClick={handleRemoveFriend}
                         disabled={friendLoading}
-                        className="px-3 py-1 text-red-500 text-sm hover:text-red-700"
+                        className="px-3 py-1 text-cinnabar text-sm hover:text-cinnabar-dark"
                       >
                         删除好友
                       </button>
@@ -210,10 +210,10 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-ink/30">
               {formatRelativeTime(profile.created_at)} 加入
               <span className="mx-2">·</span>
-              <button onClick={() => navigate('/friends')} className="hover:text-indigo-600">
+              <button onClick={() => navigate('/friends')} className="hover:text-cinnabar">
                 {friendCount} 位好友
               </button>
             </p>
@@ -228,20 +228,20 @@ export default function ProfilePage() {
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
                 maxLength={500}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                className="w-full border border-warm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cinnabar resize-none"
                 placeholder="写一段自我介绍…"
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={handleSaveBio}
                   disabled={saving}
-                  className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="px-3 py-1 bg-cinnabar text-white text-sm rounded-xl hover:bg-cinnabar-dark disabled:opacity-40"
                 >
                   {saving ? '保存中…' : '保存'}
                 </button>
                 <button
                   onClick={() => setEditing(false)}
-                  className="px-3 py-1 border border-gray-300 text-sm rounded-lg text-gray-600 hover:bg-gray-50"
+                  className="px-3 py-1 border border-warm text-sm rounded-xl text-ink/60 hover:bg-paper"
                 >
                   取消
                 </button>
@@ -249,13 +249,13 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="flex items-start justify-between">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-ink/60">
                 {profile.bio || '这个人很懒，什么都没写…'}
               </p>
               {isOwn && (
                 <button
                   onClick={() => { setBio(profile.bio); setEditing(true) }}
-                  className="text-sm text-indigo-600 hover:underline shrink-0 ml-4"
+                  className="text-sm text-cinnabar hover:underline shrink-0 ml-4"
                 >
                   编辑
                 </button>
@@ -267,7 +267,7 @@ export default function ProfilePage() {
 
       <h2 className="text-lg font-semibold mb-4">发布的帖子</h2>
       {posts.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">还没有发过帖子</p>
+        <p className="text-center text-ink/30 py-8">还没有发过帖子</p>
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (

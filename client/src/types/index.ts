@@ -77,11 +77,11 @@ export const CATEGORIES = ['综合', '科技', '生活', '学习', '其他'] as 
 
 export function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
-    综合: 'bg-blue-100 text-blue-800',
-    科技: 'bg-purple-100 text-purple-800',
-    生活: 'bg-green-100 text-green-800',
-    学习: 'bg-yellow-100 text-yellow-800',
-    其他: 'bg-gray-100 text-gray-800',
+    综合: 'bg-ink/5 text-ink/70',
+    科技: 'bg-purple-50 text-purple-700',
+    生活: 'bg-sage/20 text-sage-dark',
+    学习: 'bg-amber-50 text-amber-700',
+    其他: 'bg-warm text-ink/50',
   }
   return colors[category] || colors.其他
 }

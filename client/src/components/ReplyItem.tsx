@@ -54,23 +54,23 @@ export default function ReplyItem({ reply, onReplyCreated, onReplyDeleted, postI
   }
 
   return (
-    <div className={`${reply.parent_reply_id ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''}`}>
+    <div className={`${reply.parent_reply_id ? 'ml-6 border-l-2 border-warm pl-4' : ''}`}>
       <div className="py-3">
         <div className="flex items-center gap-2 mb-1">
           <Link to={`/profile/${reply.user_id}`} className="flex items-center gap-2">
-            <img src={getAvatarUrl(reply.avatar_url)} alt="" className="w-5 h-5 rounded-full bg-gray-200" />
-            <span className="text-sm font-medium text-gray-700 hover:text-indigo-600">{reply.username}</span>
+            <img src={getAvatarUrl(reply.avatar_url)} alt="" className="w-5 h-5 rounded-full bg-warm" />
+            <span className="text-sm font-medium text-ink/80 hover:text-cinnabar">{reply.username}</span>
           </Link>
-          <span className="text-xs text-gray-400">{formatRelativeTime(reply.created_at)}</span>
+          <span className="text-xs text-ink/30">{formatRelativeTime(reply.created_at)}</span>
         </div>
-        <p className="text-sm text-gray-700 whitespace-pre-wrap">{reply.content}</p>
+        <p className="text-sm text-ink/80 whitespace-pre-wrap">{reply.content}</p>
         <div className="flex items-center gap-3 mt-1">
           <button
             onClick={() => {
               if (!isAuthenticated) { navigate('/login'); return }
               setShowForm(!showForm)
             }}
-            className="text-xs text-gray-400 hover:text-indigo-600"
+            className="text-xs text-ink/30 hover:text-cinnabar"
           >
             {showForm ? '取消' : '回复'}
           </button>
@@ -78,7 +78,7 @@ export default function ReplyItem({ reply, onReplyCreated, onReplyDeleted, postI
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="text-xs text-red-400 hover:text-red-600"
+              className="text-xs text-red-400 hover:text-cinnabar"
             >
               {deleting ? '删除中…' : '删除'}
             </button>
@@ -91,13 +91,13 @@ export default function ReplyItem({ reply, onReplyCreated, onReplyDeleted, postI
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+              className="w-full border border-warm rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cinnabar resize-none"
               placeholder="写下你的回复…"
             />
             <button
               type="submit"
               disabled={!content.trim() || submitting}
-              className="mt-1 px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="mt-1 px-3 py-1 bg-cinnabar text-white text-xs rounded-xl hover:bg-cinnabar-dark disabled:opacity-40"
             >
               {submitting ? '发送中…' : '回复'}
             </button>

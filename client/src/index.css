@@ -4,4 +4,21 @@
 
 body {
   min-height: 100vh;
+  font-family: 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid theme('colors.cinnabar');
+  outline-offset: 2px;
+}
+
+/* Smooth card hover */
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(44, 36, 22, 0.08);
 }
