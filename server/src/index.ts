@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import express from 'express'
-import cors from 'cors'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
 import { getDb } from './db/index.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
@@ -14,13 +14,17 @@ import adminRoutes from './routes/admin.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
-app.use(cors({ origin: CLIENT_URL, credentials: true }))
 app.use(express.json())
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
+
+// Serve built frontend static files
+const clientDist = path.resolve(__dirname, '..', 'public')
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist))
+}
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -34,13 +38,22 @@ app.use('/api/posts/:id/like', likeRoutes)
 app.use('/api/friends', friendRoutes)
 app.use('/api/admin', adminRoutes)
 
+// SPA fallback: any non-API route serves index.html
+app.get('*', (_req, res) => {
+  const indexHtml = path.resolve(clientDist, 'index.html')
+  if (fs.existsSync(indexHtml)) {
+    res.sendFile(indexHtml)
+  } else {
+    res.status(200).send('Forum API is running. Frontend not built yet.')
+  }
+})
+
 async function start() {
   console.log('MYSQL_URL:', process.env.MYSQL_URL ? 'SET' : 'NOT SET')
-  console.log('MYSQLHOST:', process.env.MYSQLHOST || 'NOT SET')
   await getDb()
   console.log('Database initialized')
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
+    console.log(`Server running on port ${PORT}`)
   })
 }
 
