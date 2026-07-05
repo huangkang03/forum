@@ -150,8 +150,9 @@ export default function ProfilePage() {
                     try {
                       const result = await uploadAvatar(file)
                       setProfile(result.user)
-                    } catch {
-                      alert('头像上传失败，请重试')
+                    } catch (err: any) {
+                      const msg = err?.response?.data?.error || '头像上传失败，请重试'
+                      alert(msg)
                     }
                   }}
                 />

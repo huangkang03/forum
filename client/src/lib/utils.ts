@@ -2,9 +2,7 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export function getAvatarUrl(url?: string): string {
   if (!url) return ''
-  // External URL (DiceBear etc.) — use as-is
-  if (url.startsWith('http')) return url
-  // Uploaded file — relative path, prepend API base in production
+  if (url.startsWith('http') || url.startsWith('data:')) return url
   if (API_BASE) return API_BASE + url
   return url
 }
