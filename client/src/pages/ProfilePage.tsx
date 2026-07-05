@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false)
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   // Friend state
   const [friendStatus, setFriendStatus] = useState<FriendshipStatus>({ status: 'none' })
@@ -133,8 +134,14 @@ export default function ProfilePage() {
       <div className="bg-white border border-warm rounded-xl p-6 mb-6">
         <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
-            <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-warm object-cover" />
-            {isOwn && (
+            {avatarUploading ? (
+              <div className="w-16 h-16 rounded-full bg-warm flex items-center justify-center">
+                <div className="animate-spin h-6 w-6 border-2 border-cinnabar border-t-transparent rounded-full" />
+              </div>
+            ) : (
+              <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-warm object-cover" />
+            )}
+            {isOwn && !avatarUploading && (
               <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -147,12 +154,15 @@ export default function ProfilePage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
+                    setAvatarUploading(true)
                     try {
                       const result = await uploadAvatar(file)
                       setProfile(result.user)
                     } catch (err: any) {
                       const msg = err?.response?.data?.error || '头像上传失败，请重试'
                       alert(msg)
+                    } finally {
+                      setAvatarUploading(false)
                     }
                   }}
                 />
