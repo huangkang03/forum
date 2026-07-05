@@ -37,6 +37,12 @@ app.use('/api/posts/:id/like', likeRoutes)
 app.use('/api/friends', friendRoutes)
 app.use('/api/admin', adminRoutes)
 
+// Global error handler
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err.message)
+  res.status(500).json({ error: '服务器内部错误' })
+})
+
 // SPA fallback: any non-API route serves index.html
 app.get('*', (_req, res) => {
   const indexHtml = path.resolve(clientDist, 'index.html')

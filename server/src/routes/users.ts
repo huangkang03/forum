@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express'
+import { Router, Request, Response, NextFunction } from 'express'
 import multer from 'multer'
 import { getDb } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
@@ -7,11 +7,10 @@ const router = Router()
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const name = file.originalname || ''
-    const allowed = /\.(jpg|jpeg|png|gif|webp)$/i
-    if (allowed.test(name)) {
+    if (/\.(jpg|jpeg|png|gif|webp)$/i.test(name)) {
       cb(null, true)
     } else {
       cb(new Error('只允许上传图片文件 (jpg/png/gif/webp)'))
@@ -58,42 +57,41 @@ router.put('/me', authenticate, async (req: Request, res: Response) => {
   res.json({ user })
 })
 
-router.put('/me/avatar', authenticate, (req: Request, res: Response) => {
-  upload.single('avatar')(req, res, async (err) => {
+function uploadMiddleware(req: Request, res: Response, next: NextFunction) {
+  upload.single('avatar')(req, res, (err: any) => {
     if (err) {
-      if (err.message?.includes('只允许上传')) {
-        res.status(400).json({ error: err.message })
-      } else {
-        res.status(400).json({ error: '上传失败，请检查文件格式和大小' })
-      }
+      res.status(400).json({ error: err.message || '上传失败' })
+      return
+    }
+    next()
+  })
+}
+
+router.put('/me/avatar', authenticate, uploadMiddleware, async (req: Request, res: Response) => {
+  try {
+    const db = await getDb()
+    const file = req.file
+
+    if (!file) {
+      res.status(400).json({ error: '请选择要上传的头像图片' })
       return
     }
 
-    try {
-      const db = await getDb()
-      const file = req.file
+    const mimeType = file.mimetype || 'image/png'
+    const base64 = file.buffer.toString('base64')
+    const dataUrl = `data:${mimeType};base64,${base64}`
 
-      if (!file) {
-        res.status(400).json({ error: '请选择要上传的头像图片' })
-        return
-      }
+    await db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(dataUrl, req.user!.userId)
 
-      const mimeType = file.mimetype || 'image/png'
-      const base64 = file.buffer.toString('base64')
-      const dataUrl = `data:${mimeType};base64,${base64}`
+    const user = await db.prepare(
+      'SELECT id, username, avatar_url, bio, role, created_at FROM users WHERE id = ?'
+    ).get(req.user!.userId)
 
-      await db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(dataUrl, req.user!.userId)
-
-      const user = await db.prepare(
-        'SELECT id, username, avatar_url, bio, role, created_at FROM users WHERE id = ?'
-      ).get(req.user!.userId)
-
-      res.json({ user, avatar_url: dataUrl })
-    } catch (e: any) {
-      console.error('Avatar upload error:', e)
-      res.status(500).json({ error: '服务器错误，请重试' })
-    }
-  })
+    res.json({ user, avatar_url: dataUrl })
+  } catch (e: any) {
+    console.error('Avatar upload error:', e.message)
+    res.status(500).json({ error: '服务器错误' })
+  }
 })
 
 export default router
