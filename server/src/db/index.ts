@@ -16,11 +16,11 @@ async function getPool(): Promise<mysql.Pool> {
       })
     } else {
       pool = mysql.createPool({
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '123456',
-        database: process.env.DB_NAME || 'forum',
+        host: process.env.MYSQLHOST || process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT || '3306'),
+        user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
+        password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '123456',
+        database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'forum',
         waitForConnections: true,
         connectionLimit: 10,
         charset: 'utf8mb4',
