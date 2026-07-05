@@ -51,6 +51,22 @@ async function initSchema() {
   try {
     await p.execute("ALTER TABLE users ADD COLUMN muted_until DATETIME DEFAULT NULL")
   } catch { /* ignore */ }
+
+  // Fix old DiceBear URLs — replace with local SVG avatars
+  try {
+    const [rows] = await p.query("SELECT id, username FROM users WHERE avatar_url LIKE '%dicebear%'") as any[]
+    for (const row of rows) {
+      const colors = ['#E85D75','#F4A261','#2A9D8F','#E76F51','#264653','#6D597A','#B5838D','#52796F','#BC6C25','#457B9D']
+      let hash = 0
+      for (let i = 0; i < row.username.length; i++) hash = row.username.charCodeAt(i) + ((hash << 5) - hash)
+      const color = colors[Math.abs(hash) % colors.length]
+      const initial = encodeURIComponent(row.username.charAt(0).toUpperCase())
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="${color}" width="100" height="100"/><text x="50" y="68" font-size="48" font-family="Arial, sans-serif" fill="white" text-anchor="middle">${initial}</text></svg>`
+      const dataUrl = 'data:image/svg+xml,' + svg
+      await p.query("UPDATE users SET avatar_url = ? WHERE id = ?", [dataUrl, row.id])
+    }
+    if (rows.length > 0) console.log(`Migrated ${rows.length} DiceBear avatars to local SVG`)
+  } catch (e: any) { console.log('Avatar migration skipped:', e.message) }
 }
 
 let initialized = false
