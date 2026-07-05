@@ -185,6 +185,7 @@ export default function PostDetailPage() {
             <ReplyItem
               reply={reply}
               onReplyCreated={fetchData}
+              onReplyDeleted={fetchData}
               postId={postId}
               createReplyFn={createReply}
             />

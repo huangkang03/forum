@@ -3,21 +3,39 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { formatRelativeTime } from '../lib/utils'
 import { getAvatarUrl } from '../lib/utils'
+import { deleteReply } from '../api/replies'
 import type { Reply } from '../types'
 
 interface ReplyItemProps {
   reply: Reply
   onReplyCreated: () => void
+  onReplyDeleted: () => void
   postId: number
   createReplyFn: (postId: number, data: { content: string; parent_reply_id?: number }) => Promise<any>
 }
 
-export default function ReplyItem({ reply, onReplyCreated, postId, createReplyFn }: ReplyItemProps) {
-  const { isAuthenticated } = useAuth()
+export default function ReplyItem({ reply, onReplyCreated, onReplyDeleted, postId, createReplyFn }: ReplyItemProps) {
+  const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const canDelete = user && (user.role === 'admin' || user.id === reply.user_id)
+
+  const handleDelete = async () => {
+    if (!confirm('确定要删除这条回复吗？')) return
+    setDeleting(true)
+    try {
+      await deleteReply(reply.id)
+      onReplyDeleted()
+    } catch {
+      // ignore
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,15 +64,26 @@ export default function ReplyItem({ reply, onReplyCreated, postId, createReplyFn
           <span className="text-xs text-gray-400">{formatRelativeTime(reply.created_at)}</span>
         </div>
         <p className="text-sm text-gray-700 whitespace-pre-wrap">{reply.content}</p>
-        <button
-          onClick={() => {
-            if (!isAuthenticated) { navigate('/login'); return }
-            setShowForm(!showForm)
-          }}
-          className="text-xs text-gray-400 hover:text-indigo-600 mt-1"
-        >
-          {showForm ? '取消' : '回复'}
-        </button>
+        <div className="flex items-center gap-3 mt-1">
+          <button
+            onClick={() => {
+              if (!isAuthenticated) { navigate('/login'); return }
+              setShowForm(!showForm)
+            }}
+            className="text-xs text-gray-400 hover:text-indigo-600"
+          >
+            {showForm ? '取消' : '回复'}
+          </button>
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-xs text-red-400 hover:text-red-600"
+            >
+              {deleting ? '删除中…' : '删除'}
+            </button>
+          )}
+        </div>
 
         {showForm && (
           <form onSubmit={handleSubmit} className="mt-2">
@@ -83,6 +112,7 @@ export default function ReplyItem({ reply, onReplyCreated, postId, createReplyFn
               key={child.id}
               reply={child}
               onReplyCreated={onReplyCreated}
+              onReplyDeleted={onReplyDeleted}
               postId={postId}
               createReplyFn={createReplyFn}
             />

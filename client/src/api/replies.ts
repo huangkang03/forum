@@ -13,3 +13,7 @@ export async function createReply(postId: number, data: CreateReplyRequest): Pro
   const res = await api.post<{ reply: Reply }>(`/posts/${postId}/replies`, data)
   return res.data.reply
 }
+
+export async function deleteReply(replyId: number): Promise<void> {
+  await api.delete(`/admin/replies/${replyId}`)
+}
