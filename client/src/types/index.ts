@@ -2,6 +2,7 @@ export interface UserPublic {
   id: number
   username: string
   avatar_url: string
+  pending_avatar?: string
   bio: string
   role: 'user' | 'admin'
   created_at: string

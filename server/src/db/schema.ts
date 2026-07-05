@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(30) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   avatar_url MEDIUMTEXT NOT NULL,
+  pending_avatar MEDIUMTEXT DEFAULT NULL,
   bio VARCHAR(500) DEFAULT '',
   role ENUM('user','admin') NOT NULL DEFAULT 'user',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

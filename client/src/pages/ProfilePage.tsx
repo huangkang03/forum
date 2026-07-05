@@ -139,7 +139,14 @@ export default function ProfilePage() {
                 <div className="animate-spin h-6 w-6 border-2 border-cinnabar border-t-transparent rounded-full" />
               </div>
             ) : (
-              <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-warm object-cover" />
+              <div className="relative">
+                <img src={getAvatarUrl(profile.avatar_url)} alt="" className="w-16 h-16 rounded-full bg-warm object-cover" />
+                {(profile as any).pending_avatar && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                    审核中
+                  </span>
+                )}
+              </div>
             )}
             {isOwn && !avatarUploading && (
               <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">

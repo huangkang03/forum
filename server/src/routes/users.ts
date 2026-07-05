@@ -81,13 +81,14 @@ router.put('/me/avatar', authenticate, uploadMiddleware, async (req: Request, re
     const base64 = file.buffer.toString('base64')
     const dataUrl = `data:${mimeType};base64,${base64}`
 
-    await db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(dataUrl, req.user!.userId)
+    // Save to pending_avatar — waits for admin approval
+    await db.prepare('UPDATE users SET pending_avatar = ? WHERE id = ?').run(dataUrl, req.user!.userId)
 
     const user = await db.prepare(
-      'SELECT id, username, avatar_url, bio, role, created_at FROM users WHERE id = ?'
+      'SELECT id, username, avatar_url, pending_avatar, bio, role, created_at FROM users WHERE id = ?'
     ).get(req.user!.userId)
 
-    res.json({ user, avatar_url: dataUrl })
+    res.json({ user, pending_avatar: dataUrl })
   } catch (e: any) {
     console.error('Avatar upload error:', e.message)
     res.status(500).json({ error: '服务器错误' })

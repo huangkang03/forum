@@ -88,4 +88,36 @@ router.put('/users/:id/role', async (req: Request, res: Response) => {
   res.json({ message: '角色已更新', userId: id, role })
 })
 
+// Get pending avatar reviews
+router.get('/avatars', async (_req: Request, res: Response) => {
+  const db = await getDb()
+  const users = await db.prepare(
+    'SELECT id, username, pending_avatar, avatar_url FROM users WHERE pending_avatar IS NOT NULL ORDER BY updated_at DESC'
+  ).all()
+  res.json({ users })
+})
+
+// Approve avatar
+router.post('/avatars/:userId/approve', async (req: Request, res: Response) => {
+  const db = await getDb()
+  const id = parseInt(req.params.userId as string)
+  if (isNaN(id)) { res.status(400).json({ error: '无效的用户 ID' }); return }
+
+  const user = await db.prepare('SELECT id, pending_avatar FROM users WHERE id = ? AND pending_avatar IS NOT NULL').get(id)
+  if (!user) { res.status(404).json({ error: '用户没有待审核头像' }); return }
+
+  await db.prepare('UPDATE users SET avatar_url = ?, pending_avatar = NULL WHERE id = ?').run(user.pending_avatar, id)
+  res.json({ message: '头像已通过审核' })
+})
+
+// Reject avatar
+router.post('/avatars/:userId/reject', async (req: Request, res: Response) => {
+  const db = await getDb()
+  const id = parseInt(req.params.userId as string)
+  if (isNaN(id)) { res.status(400).json({ error: '无效的用户 ID' }); return }
+
+  await db.prepare('UPDATE users SET pending_avatar = NULL WHERE id = ?').run(id)
+  res.json({ message: '头像已拒绝' })
+})
+
 export default router

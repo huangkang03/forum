@@ -44,9 +44,10 @@ async function initSchema() {
   // Migration: ensure avatar_url is TEXT for base64 storage
   try {
     await p.execute("ALTER TABLE users MODIFY avatar_url MEDIUMTEXT NOT NULL")
-  } catch {
-    // already TEXT, ignore
-  }
+  } catch { /* ignore */ }
+  try {
+    await p.execute("ALTER TABLE users ADD COLUMN pending_avatar MEDIUMTEXT DEFAULT NULL")
+  } catch { /* ignore */ }
 }
 
 let initialized = false
