@@ -47,9 +47,13 @@ router.post('/register', async (req: Request, res: Response) => {
   const password_hash = bcrypt.hashSync(password, 10)
   const avatar_url = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`
 
+  // Auto-promote first user to admin
+  const adminCount = await db.prepare('SELECT COUNT(*) AS count FROM users WHERE role = ?').get('admin')
+  const role = (adminCount as any)?.count === 0 ? 'admin' : 'user'
+
   const result = await db.prepare(
-    'INSERT INTO users (username, password_hash, avatar_url) VALUES (?, ?, ?)'
-  ).run(username, password_hash, avatar_url)
+    'INSERT INTO users (username, password_hash, avatar_url, role) VALUES (?, ?, ?, ?)'
+  ).run(username, password_hash, avatar_url, role)
 
   const user = await db.prepare('SELECT id, username, avatar_url, bio, role, created_at FROM users WHERE id = ?').get(result.lastInsertRowid)
 
