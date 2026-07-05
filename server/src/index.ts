@@ -18,7 +18,6 @@ const PORT = process.env.PORT || 3000
 app.use(express.json())
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')))
 
 // Serve built frontend static files
 const clientDist = path.resolve(__dirname, '..', 'public')

@@ -1,31 +1,16 @@
 import { Router, Request, Response } from 'express'
 import multer from 'multer'
-import path from 'node:path'
-import fs from 'node:fs'
 import { getDb } from '../db/index.js'
 import { authenticate } from '../middleware/auth.js'
 
 const router = Router()
 
-const uploadDir = path.resolve('uploads', 'avatars')
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.png'
-    cb(null, `avatar_${Date.now()}${ext}`)
-  },
-})
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: (_req, file, cb) => {
     const allowed = /\.(jpg|jpeg|png|gif|webp)$/i
-    if (allowed.test(path.extname(file.originalname))) {
+    if (allowed.test(file.originalname)) {
       cb(null, true)
     } else {
       cb(new Error('只允许上传图片文件 (jpg/png/gif/webp)'))
@@ -81,15 +66,18 @@ router.put('/me/avatar', authenticate, upload.single('avatar'), async (req: Requ
     return
   }
 
-  const avatarUrl = `/uploads/avatars/${file.filename}`
+  // Store as base64 data URL in database
+  const mimeType = file.mimetype || 'image/png'
+  const base64 = file.buffer.toString('base64')
+  const dataUrl = `data:${mimeType};base64,${base64}`
 
-  await db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatarUrl, req.user!.userId)
+  await db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(dataUrl, req.user!.userId)
 
   const user = await db.prepare(
     'SELECT id, username, avatar_url, bio, role, created_at FROM users WHERE id = ?'
   ).get(req.user!.userId)
 
-  res.json({ user, avatar_url: avatarUrl })
+  res.json({ user, avatar_url: dataUrl })
 })
 
 export default router
