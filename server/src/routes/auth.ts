@@ -6,6 +6,17 @@ import type { UserPublic } from '../types/index.js'
 
 const router = Router()
 
+// Generate a simple SVG avatar from username — no external API needed
+function generateAvatar(username: string): string {
+  const colors = ['#E85D75','#F4A261','#2A9D8F','#E76F51','#264653','#6D597A','#B5838D','#52796F','#BC6C25','#457B9D']
+  let hash = 0
+  for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash)
+  const color = colors[Math.abs(hash) % colors.length]
+  const initial = encodeURIComponent(username.charAt(0).toUpperCase())
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="${color}" width="100" height="100"/><text x="50" y="68" font-size="48" font-family="Arial, sans-serif" fill="white" text-anchor="middle">${initial}</text></svg>`
+  return 'data:image/svg+xml,' + svg
+}
+
 function toPublic(user: { id: number; username: string; avatar_url: string; bio: string; role: string; created_at: string }): UserPublic {
   return {
     id: user.id,
@@ -45,7 +56,9 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 
   const password_hash = bcrypt.hashSync(password, 10)
-  const avatar_url = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`
+
+  // Generate local avatar SVG (no external dependency)
+  const avatar_url = generateAvatar(username)
 
   // Auto-promote first user to admin
   const adminCount = await db.prepare('SELECT COUNT(*) AS count FROM users WHERE role = ?').get('admin')
